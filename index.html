@@ -127,13 +127,23 @@
                 <div class="slider-bounds"><span>0.5 eV</span><span>6.0 eV</span></div>
             </div>
 
-            <div class="input-wrapper">
+            <div class="toggle-group">
+                <button id="btn-rafaga" class="toggle-btn active">Ráfaga</button>
+                <button id="btn-single" class="toggle-btn">Disparo único</button>
+            </div>
+
+            <div id="wrapper-erate" class="input-wrapper">
                 <div class="label-container">
                     <label for="slider-erate">Frecuencia de disparo</label>
                     <span id="val-erate" class="value-badge">Media</span>
                 </div>
                 <input type="range" id="slider-erate" min="1" max="5" value="3" step="1">
                 <div class="slider-bounds"><span>Lenta</span><span>Rápida</span></div>
+            </div>
+
+            <div id="wrapper-single-fire" style="display:none">
+                <button id="btn-fire" class="btn-primary" style="width:100%;margin-top:6px">⚡ Disparar electrón</button>
+                <p class="field-hint" style="margin-top:4px">Un electrón a la vez. Observa el resultado antes del siguiente disparo.</p>
             </div>
 
             <div id="energy-access-panel" class="energy-access-panel"></div>
