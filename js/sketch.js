@@ -863,56 +863,65 @@ function drawAtom(cx, cy) {
 
 function drawTransitionArrows(cx, cy) {
   let atom = atomData;
-  // Dibujar solo transiciones desde el estado fundamental y entre niveles
-  // visibles a la derecha del átomo
-  let drawnPairs = new Set();
+  // Solo transiciones visibles (UV/IR se muestran en el diagrama de energía)
+  let visTrs = atom.transitions.filter(t => t.visible);
 
-  for (let tr of atom.transitions) {
-    let key = tr.from + '-' + tr.to;
-    if (drawnPairs.has(key)) continue;
-    drawnPairs.add(key);
+  // Distribuir ángulos equitativamente en el cuadrante superior-derecho
+  let baseAngle = -PI / 8;          // -22.5° desde horizontal
+  let angleStep = PI / (visTrs.length + 1) * 0.55;
 
-    let r1 = atom.radii[tr.from];
-    let r2 = atom.radii[tr.to];
-    let x1 = cx + r1;
-    let x2 = cx + r2;
-    let arrowX = max(x1, x2) + 14 + (tr.to - tr.from) * 4;
+  for (let i = 0; i < visTrs.length; i++) {
+    let tr  = visTrs[i];
+    let r1  = atom.radii[tr.from];
+    let r2  = atom.radii[tr.to];
+    let col = wlToRGB(tr.wl);
+    let ang = baseAngle - i * angleStep;
 
-    let alphaLine = tr.visible ? 160 : 60;
-    let col = tr.visible ? wlToRGB(tr.wl) : [80, 80, 80];
+    // Puntos en los bordes de cada órbita (radiales)
+    let ix1 = cx + r1 * cos(ang),  iy1 = cy + r1 * sin(ang);
+    let ix2 = cx + r2 * cos(ang),  iy2 = cy + r2 * sin(ang);
 
-    // Línea vertical
-    stroke(col[0], col[1], col[2], alphaLine);
-    strokeWeight(tr.visible ? 1.5 : 0.8);
-    if (!tr.visible) drawingContext.setLineDash([3, 3]);
-    line(arrowX, cy - r1, arrowX, cy - r2);
-    drawingContext.setLineDash([]);
+    // Línea entre órbitas
+    stroke(col[0], col[1], col[2], 190);
+    strokeWeight(1.8);
+    line(ix1, iy1, ix2, iy2);
 
-    // Puntas
+    // Cabeza de flecha hacia afuera (absorción ↑)
+    let dx = ix2 - ix1, dy = iy2 - iy1;
+    let len = sqrt(dx * dx + dy * dy);
+    let ux = dx / len, uy = dy / len;
+    let px = -uy, py = ux; // perpendicular
     noStroke();
-    fill(col[0], col[1], col[2], alphaLine);
-    // Flecha arriba (absorción)
-    triangle(arrowX, cy - r2 - 5, arrowX - 3, cy - r2 + 1, arrowX + 3, cy - r2 + 1);
-    // Líneas horizontales en cada nivel
-    stroke(col[0], col[1], col[2], alphaLine * 0.6);
-    strokeWeight(0.8);
-    line(x1,      cy - r1, arrowX, cy - r1);
-    line(x2,      cy - r2, arrowX, cy - r2);
+    fill(col[0], col[1], col[2], 210);
+    triangle(
+      ix2 + ux * 5, iy2 + uy * 5,
+      ix2 - ux * 4 + px * 3.5, iy2 - uy * 4 + py * 3.5,
+      ix2 - ux * 4 - px * 3.5, iy2 - uy * 4 - py * 3.5
+    );
 
-    // Etiqueta λ
+    // Pequeño círculo en el nivel inferior
+    fill(col[0], col[1], col[2], 140);
+    circle(ix1, iy1, 5);
+
+    // Etiqueta: longitud de onda cerca de la mitad de la flecha
+    let mx = (ix1 + ix2) / 2 + ux * 6 + px * 8;
+    let my = (iy1 + iy2) / 2 + uy * 6 + py * 8;
+    fill(col[0], col[1], col[2], 220);
     noStroke();
-    fill(col[0], col[1], col[2], tr.visible ? 200 : 80);
-    textAlign(LEFT, CENTER);
+    textAlign(CENTER, CENTER);
     textSize(8);
-    let lbl = tr.visible ? tr.wl + ' nm' : (tr.wl < 380 ? 'UV' : 'IR');
-    text(lbl, arrowX + 4, cy - (r1 + r2) / 2);
+    text(tr.wl + ' nm', mx, my);
+  }
 
-    // Marca dashed para UV/IR
-    if (!tr.visible) {
-      fill(80, 80, 80, 80);
-      textSize(7);
-      text('(invis.)', arrowX + 4, cy - (r1 + r2) / 2 + 9);
-    }
+  // Indicar transiciones invisibles con etiqueta global (no arrows)
+  let invTrs = atom.transitions.filter(t => !t.visible);
+  if (invTrs.length > 0) {
+    fill(90, 90, 90, 100);
+    noStroke();
+    textAlign(LEFT, CENTER);
+    textSize(7.5);
+    let maxR = atom.radii[atom.levels - 1];
+    text('+ ' + invTrs.length + ' IR/UV (ver diagrama →)', cx + maxR + 8, cy + maxR * 0.55);
   }
 }
 
