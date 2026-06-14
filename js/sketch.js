@@ -366,6 +366,17 @@ let domWrapperFRate, domWrapperFotoFire;
 // Espectro extendido UV/IR
 let extSpectrumLines = {};
 
+// Posición Y suavizada del electrón en el diagrama de niveles
+let diagElectronRY = 0;
+
+// ─── HELPERS DIAGRAMA DE NIVELES ────────────────────────────────
+function diagTargetY() {
+  if (!atomData) return DIAG_Y + DIAG_H - 22;
+  let maxE = atomData.energies[atomData.levels - 1];
+  return map(atomData.energies[electronLevel], -0.1, maxE + 0.3,
+             DIAG_Y + DIAG_H - 22, DIAG_Y + 32);
+}
+
 // ─── PALETAS DE TEMA PARA EL CANVAS ─────────────────────────────
 const CANVAS_THEMES = {
   dark: {
@@ -522,6 +533,7 @@ function resetSim() {
   activeTrT        = 0;
   collWaitResult   = false;
   if (domBtnFire && domBtnFire.elt) domBtnFire.elt.disabled = false;
+  if (atomData) diagElectronRY = diagTargetY();
   initGasMode();
   spectrumIntensity.fill(0);
   extSpectrumLines = {};
@@ -661,6 +673,7 @@ function updatePhotonMode() {
   }
 
   if (flashTimer > 0) flashTimer--;
+  diagElectronRY += (diagTargetY() - diagElectronRY) * 0.10;
 
   // Disparo único: re-habilitar botón cuando el resultado se resuelve
   if (fotoSingleShot && fotoWaitResult &&
@@ -799,6 +812,7 @@ function updateCollisionMode() {
     if (exciteTimer === 0) deExciteAtom();
   }
   if (flashTimer > 0) flashTimer--;
+  diagElectronRY += (diagTargetY() - diagElectronRY) * 0.10;
 
   // Disparo único: re-habilitar botón cuando el resultado se resuelve
   if (collSingleShot && collWaitResult &&
@@ -1173,15 +1187,33 @@ function drawEnergyDiagram() {
     textSize(8);
     text(e.toFixed(2), x0 + 28, ly);
 
-    // Electrón en el diagrama
-    if (isActive) {
-      noStroke();
-      fill(0, 255, 180, 200);
-      circle(x0 + 22, ly, 7);
-      fill(200, 255, 240, 180);
-      circle(x0 + 22, ly, 3);
+  }
+
+  // Electrón animado en el diagrama (posición interpolada)
+  let targY   = diagTargetY();
+  let distY   = abs(diagElectronRY - targY);
+  let eX      = x0 + 22;
+
+  noStroke();
+  if (distY > 3) {
+    // Ghost en el nivel destino mientras el electrón se mueve
+    fill(0, 255, 180, map(distY, 3, 40, 0, 90));
+    circle(eX, targY, 10);
+    // Línea punteada entre posición actual y destino
+    let steps = floor(distY / 5);
+    for (let s = 0; s <= steps; s++) {
+      if (s % 2 === 0) {
+        let sy = lerp(diagElectronRY, targY, s / steps);
+        fill(0, 255, 180, map(distY, 3, 40, 0, 55));
+        circle(eX, sy, 2.5);
+      }
     }
   }
+  // Electrón principal
+  fill(0, 255, 180, 220);
+  circle(eX, diagElectronRY, 9);
+  fill(200, 255, 240, 200);
+  circle(eX, diagElectronRY, 4);
 
   // Dibujar flechas de transición en el diagrama
   let drawn = new Set();
