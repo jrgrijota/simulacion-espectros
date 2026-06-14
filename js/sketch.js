@@ -366,6 +366,89 @@ let domWrapperFRate, domWrapperFotoFire;
 // Espectro extendido UV/IR
 let extSpectrumLines = {};
 
+// ─── PALETAS DE TEMA PARA EL CANVAS ─────────────────────────────
+const CANVAS_THEMES = {
+  dark: {
+    bg:         [12,  14,  18 ],
+    panelBg:    [16,  22,  32 ],
+    panelBord:  [50,  70,  90 ],
+    txtBright:  [140, 170, 200],
+    txtMid:     [100, 130, 160],
+    orbitLbl:   [160, 180, 200],
+    specBg:     [8,   10,  14 ],
+    specBord:   [50,  65,  85 ],
+    specTitle:  [120, 150, 190],
+    specTick:   [100, 120, 150],
+    srcBody:    [30,  40,  55 ],
+    srcStroke:  [60,  80,  100],
+    srcArrow:   [150, 170, 190],
+    tubeBord:   [60,  100, 140],
+    electrode:  [80,  100, 130],
+    tubeText:   [150, 180, 220],
+    gasCnt:     [90,  140, 180],
+    sttBoxBg:   [5,   10,  20 ],
+    sttBoxTxt:  [180, 200, 220],
+    pauseOvl:   [0,   0,   0  ],
+    pauseTxt:   [180, 200, 220],
+    transNote:  [90,  90,  90 ],
+    exciteTxt:  [255, 200, 80 ],
+    diagEval:   [100, 140, 180],
+  },
+  light: {
+    bg:         [205, 218, 234],
+    panelBg:    [222, 232, 248],
+    panelBord:  [140, 160, 190],
+    txtBright:  [30,  55,  110],
+    txtMid:     [60,  85,  140],
+    orbitLbl:   [30,  55,  110],
+    specBg:     [190, 205, 226],
+    specBord:   [130, 150, 180],
+    specTitle:  [30,  55,  110],
+    specTick:   [80,  100, 140],
+    srcBody:    [175, 192, 218],
+    srcStroke:  [110, 135, 175],
+    srcArrow:   [80,  105, 160],
+    tubeBord:   [60,  100, 160],
+    electrode:  [90,  110, 152],
+    tubeText:   [30,  60,  120],
+    gasCnt:     [30,  70,  140],
+    sttBoxBg:   [215, 228, 248],
+    sttBoxTxt:  [10,  30,  90 ],
+    pauseOvl:   [180, 200, 228],
+    pauseTxt:   [10,  30,  90 ],
+    transNote:  [80,  105, 160],
+    exciteTxt:  [180, 100, 0  ],
+    diagEval:   [70,  100, 160],
+  },
+  contrast: {
+    bg:         [0,   0,   0  ],
+    panelBg:    [0,   5,   0  ],
+    panelBord:  [255, 255, 0  ],
+    txtBright:  [255, 255, 0  ],
+    txtMid:     [0,   255, 255],
+    orbitLbl:   [255, 255, 255],
+    specBg:     [0,   0,   0  ],
+    specBord:   [255, 255, 0  ],
+    specTitle:  [0,   255, 255],
+    specTick:   [200, 200, 0  ],
+    srcBody:    [0,   20,  0  ],
+    srcStroke:  [255, 255, 0  ],
+    srcArrow:   [255, 255, 0  ],
+    tubeBord:   [255, 255, 0  ],
+    electrode:  [180, 180, 0  ],
+    tubeText:   [255, 255, 255],
+    gasCnt:     [255, 255, 255],
+    sttBoxBg:   [0,   0,   0  ],
+    sttBoxTxt:  [255, 255, 0  ],
+    pauseOvl:   [0,   0,   0  ],
+    pauseTxt:   [255, 255, 0  ],
+    transNote:  [200, 200, 0  ],
+    exciteTxt:  [255, 255, 0  ],
+    diagEval:   [0,   255, 255],
+  }
+};
+let CT = CANVAS_THEMES.dark;
+
 // Contadores del modo gas
 let gasPhotonCounts = {};
 let gasPhotonTotal  = 0;
@@ -473,7 +556,7 @@ function setup() {
 
 // ─── P5.JS DRAW ─────────────────────────────────────────────────
 function draw() {
-  background(12, 14, 18);
+  background(...CT.bg);
 
   // Decaimiento del espectro
   for (let i = 0; i < spectrumIntensity.length; i++) {
@@ -509,10 +592,10 @@ function drawCurrentMode(animate) {
 }
 
 function drawPausedOverlay() {
-  fill(0, 0, 0, 100);
+  fill(...CT.pauseOvl, 100);
   noStroke();
   rect(0, 0, CV_W, CV_H);
-  fill(180, 200, 220, 200);
+  fill(...CT.pauseTxt, 200);
   textAlign(CENTER, CENTER);
   textSize(18);
   text('PAUSA', CV_W / 2, CV_H / 2 - SPEC_H / 2);
@@ -530,7 +613,7 @@ function drawPhotonMode(animate) {
   drawAtomStateLabel();
 
   // Etiqueta de la fuente
-  fill(180, 200, 220, 140);
+  fill(...CT.tubeText, 140);
   textAlign(CENTER, TOP);
   textSize(10);
   noStroke();
@@ -637,8 +720,8 @@ function drawLightSource() {
     : [monoWl];
 
   // Cuerpo de la fuente
-  fill(30, 40, 55);
-  stroke(60, 80, 100);
+  fill(...CT.srcBody);
+  stroke(...CT.srcStroke);
   strokeWeight(1.5);
   rect(18, sy - 50, 42, 100, 8);
 
@@ -653,15 +736,15 @@ function drawLightSource() {
   }
 
   // Flecha →
-  stroke(150, 170, 190, 120);
+  stroke(...CT.srcArrow, 120);
   strokeWeight(1.5);
   line(62, sy, 88, sy);
   noStroke();
-  fill(150, 170, 190, 120);
+  fill(...CT.srcArrow, 120);
   triangle(88, sy - 4, 88, sy + 4, 94, sy);
 
   // Icono de lámpara
-  fill(200, 220, 240, 100);
+  fill(...CT.srcArrow, 100);
   noStroke();
   textAlign(CENTER, CENTER);
   textSize(9);
@@ -761,8 +844,8 @@ function tryCollisionExcite(electron) {
 
 function drawElectronGun() {
   let sx = 68, sy = ATOM_CY;
-  fill(25, 35, 50);
-  stroke(50, 80, 120);
+  fill(...CT.srcBody);
+  stroke(...CT.srcStroke);
   strokeWeight(1.5);
   rect(14, sy - 40, 50, 80, 6);
 
@@ -783,7 +866,7 @@ function drawElectronGun() {
   triangle(88, sy - 4, 88, sy + 4, 95, sy);
 
   // Etiqueta energía
-  fill(150, 200, 240, 160);
+  fill(...CT.tubeText, 160);
   textAlign(CENTER, CENTER);
   textSize(10);
   noStroke();
@@ -797,7 +880,7 @@ function drawGasMode(animate) {
 
   // Tubo
   noFill();
-  stroke(60, 100, 140, 200);
+  stroke(...CT.tubeBord, 200);
   strokeWeight(2);
   rect(TUBE_X, TUBE_Y, TUBE_W, TUBE_H, 8);
 
@@ -808,7 +891,7 @@ function drawGasMode(animate) {
   rect(TUBE_X + 2, TUBE_Y + 2, TUBE_W - 4, TUBE_H - 4, 7);
 
   // Electrodos
-  fill(80, 100, 130, 200);
+  fill(...CT.electrode, 200);
   noStroke();
   rect(TUBE_X + 3, TUBE_Y + TUBE_H / 2 - 15, 12, 30, 2);
   rect(TUBE_X + TUBE_W - 15, TUBE_Y + TUBE_H / 2 - 15, 12, 30, 2);
@@ -818,7 +901,7 @@ function drawGasMode(animate) {
   for (let ph of outPhotons)   ph.draw();
 
   // Etiqueta
-  fill(150, 180, 220, 120);
+  fill(...CT.tubeText, 160);
   textAlign(CENTER, TOP);
   textSize(10);
   noStroke();
@@ -909,14 +992,14 @@ function drawAtom(cx, cy) {
     // Etiqueta del nivel (izquierda)
     let lx = cx - r - 6;
     let ly = cy;
-    fill(160, 180, 200, 120);
+    fill(...CT.orbitLbl, 120);
     noStroke();
     textAlign(RIGHT, CENTER);
     textSize(9);
     text(atom.levelLabels[i], lx, ly);
 
     // Energía del nivel
-    fill(100, 130, 160, 100);
+    fill(...CT.txtMid, 100);
     textSize(8);
     text(atom.energies[i].toFixed(2) + ' eV', lx, ly + 11);
   }
@@ -955,7 +1038,7 @@ function drawAtom(cx, cy) {
   // Indicador de excitación
   if (electronLevel > 0) {
     let txt = '— excitado —';
-    fill(255, 200, 80, 160);
+    fill(...CT.exciteTxt, 160);
     textAlign(CENTER, BOTTOM);
     textSize(9);
     noStroke();
@@ -1022,7 +1105,7 @@ function drawTransitionArrows(cx, cy) {
   // Indicar transiciones invisibles con etiqueta global (no arrows)
   let invTrs = atom.transitions.filter(t => !t.visible);
   if (invTrs.length > 0) {
-    fill(90, 90, 90, 100);
+    fill(...CT.transNote, 100);
     noStroke();
     textAlign(LEFT, CENTER);
     textSize(7.5);
@@ -1041,23 +1124,23 @@ function drawEnergyDiagram() {
   let maxE  = atom.energies[atom.levels - 1];
 
   // Marco del diagrama
-  fill(16, 22, 32, 210);
-  stroke(50, 70, 90, 160);
+  fill(...CT.panelBg, 210);
+  stroke(...CT.panelBord, 160);
   strokeWeight(1);
   rect(x0, y0, w, h, 8);
 
   // Título
-  fill(140, 170, 200, 180);
+  fill(...CT.txtBright, 180);
   noStroke();
   textAlign(CENTER, TOP);
   textSize(9);
   text('Diagrama de niveles', x0 + w / 2, y0 + 6);
   textSize(8);
-  fill(100, 130, 160, 130);
+  fill(...CT.txtMid, 130);
   text('(eV)', x0 + 18, y0 + 18);
 
   // Eje Y
-  stroke(60, 80, 100, 100);
+  stroke(...CT.panelBord, 100);
   strokeWeight(0.8);
   line(x0 + 30, y0 + 30, x0 + 30, y0 + h - 20);
 
@@ -1085,7 +1168,7 @@ function drawEnergyDiagram() {
     text(atom.levelLabels[i], x0 + 32, ly - 8);
 
     // Valor de energía
-    fill(100, 140, 180, 140);
+    fill(...CT.diagEval, 140);
     textAlign(RIGHT, CENTER);
     textSize(8);
     text(e.toFixed(2), x0 + 28, ly);
@@ -1153,7 +1236,7 @@ function drawAtomStateLabel() {
   textSize(11);
   let tw = textWidth(stateLbl);
   noStroke();
-  fill(5, 10, 20, alpha * 0.85);
+  fill(...CT.sttBoxBg, alpha * 0.85);
   rect(lx - tw / 2 - 10, ly - 13, tw + 20, 18, 5);
   fill(r, g, b, alpha);
   textAlign(CENTER, CENTER);
@@ -1166,7 +1249,7 @@ function drawGasCounters() {
   let freeE    = gasElectrons.length;
   let excitedN = gasAtomsList.filter(a => a.level > 0).length;
 
-  fill(90, 140, 180, 160);
+  fill(...CT.gasCnt, 160);
   noStroke();
   textAlign(LEFT, BOTTOM);
   textSize(9);
@@ -1199,8 +1282,8 @@ function drawSpectrum() {
   let w = x2 - x1;
 
   // Marco
-  fill(8, 10, 14);
-  stroke(50, 65, 85, 160);
+  fill(...CT.specBg);
+  stroke(...CT.specBord, 160);
   strokeWeight(1);
   rect(x1, y, w, h, 6);
 
@@ -1233,18 +1316,18 @@ function drawSpectrum() {
   let markers = [400, 450, 500, 550, 600, 650, 700, 750];
   for (let wlM of markers) {
     let px = map(wlM - 380, 0, 400, x1 + 2, x2 - 2);
-    stroke(100, 120, 150, 80);
+    stroke(...CT.specTick, 80);
     strokeWeight(0.6);
     line(px, y + h - 12, px, y + h - 2);
     noStroke();
-    fill(100, 120, 150, 120);
+    fill(...CT.specTick, 120);
     textAlign(CENTER, BOTTOM);
     textSize(8);
     text(wlM, px, y + h - 1);
   }
 
   // Título
-  fill(120, 150, 190, 160);
+  fill(...CT.specTitle, 160);
   noStroke();
   textAlign(LEFT, TOP);
   textSize(9);
@@ -1272,7 +1355,7 @@ function drawExtendedSpectrum() {
   let irW  = irX2 - irX1;
 
   // Fondos de sección
-  fill(8, 10, 14);
+  fill(...CT.specBg);
   stroke(55, 35, 80, 120);
   strokeWeight(1);
   rect(uvX1, y, uvW, h, 4, 0, 0, 4);
@@ -1669,6 +1752,7 @@ function setupTheme() {
     opt.addEventListener('click', () => {
       let theme = opt.dataset.theme;
       document.body.className = 'theme-' + theme;
+      CT = CANVAS_THEMES[theme] || CANVAS_THEMES.dark;
       themeOpts.forEach(o => o.classList.remove('active'));
       opt.classList.add('active');
       themePanel.classList.remove('open');
