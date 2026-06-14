@@ -86,7 +86,7 @@ const ATOMS_DATA = {
 
 // ─── CONVERSIÓN λ (nm) → RGB ─────────────────────────────────────
 function wlToRGB(wl) {
-  if (wl <= 0 || wl < 380 || wl > 780) return [90, 90, 90];
+  if (wl < 380 || wl > 780) return [90, 90, 90];
   let r, g, b;
   if      (wl < 440) { r = -(wl - 440) / 60;       g = 0;                    b = 1; }
   else if (wl < 490) { r = 0;                        g = (wl - 440) / 50;     b = 1; }
@@ -116,7 +116,7 @@ class Photon {
     this.done = false;
     this.trail = [];
     [this.r, this.g, this.b] = wlToRGB(wl);
-    this.size = (wl > 0 && wl >= 380 && wl <= 780) ? 8 : 7;
+    this.size = (wl >= 380 && wl <= 780) ? 8 : 7;
   }
   update() {
     this.trail.push({ x: this.x, y: this.y });
@@ -206,10 +206,8 @@ class GasAtomEntity {
     let path = [];
     let current = startLevel;
     while (current > 0) {
-      let targets = [];
-      for (let t = 0; t < current; t++) targets.push(t);
-      let to = targets[floor(random(targets.length))];
-      path.push({ from: current, to: to });
+      let to = floor(random(current));  // aleatorio en [0, current-1]
+      path.push({ from: current, to });
       current = to;
     }
     return path;
@@ -255,6 +253,7 @@ class GasAtomEntity {
   draw() {
     let nc = this.data.nucleusColor;
     let glow = this.level > 0;
+    push();
     if (this.glowTimer > 0) {
       let a = map(this.glowTimer, 0, 20, 0, 120);
       noStroke();
@@ -277,12 +276,12 @@ class GasAtomEntity {
     textSize(10);
     noStroke();
     text(this.data.symbol, this.x, this.y);
-    // Etiqueta del nivel actual durante la cascada
     if (glow) {
       fill(255, 255, 150, 210);
       textSize(9);
       text(this.data.levelLabels[this.level], this.x, this.y + 16);
     }
+    pop();
   }
 }
 
@@ -399,6 +398,10 @@ let extSpectrumLines = {};
 // Posición Y suavizada del electrón en el diagrama de niveles
 let diagElectronRY = 0;
 
+// Buffers pre-renderizados para los fondos de espectro (evitan 1200+ rects/frame)
+let spectrumBgGfx = null;
+let extSpecBgGfx  = null;
+
 // ─── HELPERS DIAGRAMA DE NIVELES ────────────────────────────────
 function diagTargetY() {
   if (!atomData) return DIAG_Y + DIAG_H - 22;
@@ -496,8 +499,9 @@ let gasPhotonTotal  = 0;
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 function findTransition(atom, from, to) {
-  return atom.transitions.find(t => t.from === from && t.to === to) ||
-         atom.transitions.find(t => t.from === to   && t.to === from);
+  return atom.transitions.find(
+    t => (t.from === from && t.to === to) || (t.from === to && t.to === from)
+  );
 }
 
 function updateSpectrum(wl) {
@@ -526,17 +530,15 @@ function emitPhotonFromGas(x, y, wl) {
 }
 
 // Inicia la cascada de desexcitación: construye el camino completo de saltos
-// pero NO emite nada todavía. Las emisiones se reparten en updateAtomCascade(),
-// con 3 s (180 frames) de espera en cada nivel intermedio.
+// pero NO emite nada todavía. Las emisiones se producen en updateAtomCascade(),
+// con 2 s (120 frames) de espera entre cada nivel.
 function deExciteAtom() {
   if (electronLevel === 0) return;
   atomCascade = [];
   let current = electronLevel;
   while (current > 0) {
-    let possible = [];
-    for (let t = 0; t < current; t++) possible.push(t);
-    let to = possible[floor(random(possible.length))];
-    atomCascade.push({ from: current, to: to });
+    let to = floor(random(current));  // aleatorio en [0, current-1]
+    atomCascade.push({ from: current, to });
     current = to;
   }
   atomCascadeT = 120;  // 2 s en el nivel superior antes de la primera emisión
@@ -603,6 +605,40 @@ function initGasMode() {
   }
 }
 
+// ─── PRE-RENDER DE FONDOS ESTÁTICOS ─────────────────────────────
+function buildStaticBuffers() {
+  let sw = SPEC_X2 - SPEC_X1;  // 840
+
+  // Gradiente arcoíris del espectro visible (401 columnas, alpha 18)
+  spectrumBgGfx = createGraphics(sw, SPEC_H);
+  spectrumBgGfx.noStroke();
+  let colW = (sw - 4) / 400;
+  for (let i = 0; i <= 400; i++) {
+    let [r, g, b] = wlToRGB(380 + i);
+    let px = map(i, 0, 400, 2, sw - 2);
+    spectrumBgGfx.fill(r, g, b, 18);
+    spectrumBgGfx.rect(px, 2, colW, SPEC_H - 4);
+  }
+
+  // Degradados UV/IR del espectro extendido
+  let uvW  = Math.floor(sw * 0.25);
+  let gap  = 4;
+  let irX1 = uvW + gap;
+  let irW  = sw - irX1;
+  extSpecBgGfx = createGraphics(sw, EXT_SPEC_H);
+  extSpecBgGfx.noStroke();
+  for (let i = 0; i < uvW; i++) {
+    let t = i / uvW;
+    extSpecBgGfx.fill(Math.floor(100 + t * 80), Math.floor(t * 20), 230, 10);
+    extSpecBgGfx.rect(i, 2, 1, EXT_SPEC_H - 4);
+  }
+  for (let i = 0; i < irW; i++) {
+    let t = i / irW;
+    extSpecBgGfx.fill(Math.floor(190 - t * 110), 18, 5, 10);
+    extSpecBgGfx.rect(irX1 + i, 2, 1, EXT_SPEC_H - 4);
+  }
+}
+
 // ─── P5.JS SETUP ────────────────────────────────────────────────
 function setup() {
   let canvas = createCanvas(CV_W, CV_H);
@@ -611,6 +647,7 @@ function setup() {
   textFont('monospace');
   atomData = ATOMS_DATA[currentAtomKey];
   electronRCurrent = atomData.radii[0];
+  buildStaticBuffers();
   setupControls();
   updateAtomDisplay();
   initGasMode();
@@ -1412,15 +1449,8 @@ function drawSpectrum() {
   strokeWeight(1);
   rect(x1, y, w, h, 6);
 
-  // Gradiente de fondo (espectro completo muy tenue)
-  noStroke();
-  for (let i = 0; i <= 400; i++) {
-    let wl = 380 + i;
-    let [r, g, b] = wlToRGB(wl);
-    let px = map(i, 0, 400, x1 + 2, x2 - 2);
-    fill(r, g, b, 18);
-    rect(px, y + 2, (w - 4) / 400, h - 4);
-  }
+  // Gradiente de fondo pre-renderizado (arcoíris tenue)
+  if (spectrumBgGfx) image(spectrumBgGfx, x1, y);
 
   // Líneas de emisión
   for (let i = 0; i <= 400; i++) {
@@ -1487,19 +1517,8 @@ function drawExtendedSpectrum() {
   stroke(70, 38, 22, 120);
   rect(irX1, y, irW, h, 0, 4, 4, 0);
 
-  // Degradados de tinte UV
-  noStroke();
-  for (let i = 0; i < uvW; i++) {
-    let t = i / uvW;
-    fill(floor(100 + t * 80), floor(t * 20), 230, 10);
-    rect(uvX1 + i, y + 2, 1, h - 4);
-  }
-  // Degradado IR
-  for (let i = 0; i < irW; i++) {
-    let t = i / irW;
-    fill(floor(190 - t * 110), 18, 5, 10);
-    rect(irX1 + i, y + 2, 1, h - 4);
-  }
+  // Degradados pre-renderizados UV/IR
+  if (extSpecBgGfx) image(extSpecBgGfx, x1, y);
 
   // Etiquetas de sección
   noStroke();
@@ -1813,7 +1832,6 @@ function updateUI() {
     let excited = gasAtomsList.filter(a => a.level > 0).length;
     domMetricLevel.html(excited + '/' + gasAtomsList.length);
     domMetricEnergy.html(gasVoltage.toFixed(1));
-    let totalAbs = gasAtomsList.reduce((s, a) => s + (a.level > 0 ? 1 : 0), 0);
     domMetricState.html(excited > 0 ? excited + ' átomos excitados' : 'Todos en reposo');
   }
 }
@@ -1825,19 +1843,18 @@ function updateMonoBar() {
   let col    = `rgb(${r},${g},${b})`;
   let colDim = `rgba(${r},${g},${b},0.22)`;
   let el = domSliderWl.elt;
-  let min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
-  let pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
-  // Parte recorrida con el color; resto atenuado
+  let slMin = parseFloat(el.min), slMax = parseFloat(el.max), slVal = parseFloat(el.value);
+  let pct = ((slVal - slMin) / (slMax - slMin) * 100).toFixed(1) + '%';
   el.style.background = `linear-gradient(to right, ${col} 0%, ${col} ${pct}, ${colDim} ${pct})`;
 }
 
 function updateSliderFill(slider) {
   if (!slider || !slider.elt) return;
-  let el  = slider.elt;
-  let min = parseFloat(el.min);
-  let max = parseFloat(el.max);
-  let val = parseFloat(el.value);
-  let pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+  let el     = slider.elt;
+  let slMin  = parseFloat(el.min);
+  let slMax  = parseFloat(el.max);
+  let slVal  = parseFloat(el.value);
+  let pct    = ((slVal - slMin) / (slMax - slMin) * 100).toFixed(1) + '%';
   el.style.setProperty('--fill', pct);
 }
 
