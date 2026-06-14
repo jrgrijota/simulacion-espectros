@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Espectros Atómicos — Simulación Interactiva</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="theme-dark">
+<div class="app-container">
+
+    <!-- ── PANEL DE CONTROL ──────────────────────────────────── -->
+    <aside class="control-panel">
+
+        <header>
+            <div class="header-top">
+                <svg class="header-icon-svg" width="42" height="42" viewBox="0 0 42 42" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <!-- Núcleo -->
+                    <circle cx="21" cy="21" r="4" fill="#00c8ff"/>
+                    <!-- Órbitas -->
+                    <circle cx="21" cy="21" r="9"  stroke="#00c8ff" stroke-width="1.2" fill="none" opacity="0.5"/>
+                    <circle cx="21" cy="21" r="14" stroke="#00aaff" stroke-width="1.0" fill="none" opacity="0.4"/>
+                    <circle cx="21" cy="21" r="19" stroke="#0088ff" stroke-width="0.8" fill="none" opacity="0.3"/>
+                    <!-- Electrón -->
+                    <circle cx="30" cy="21" r="2.5" fill="#00ffaa"/>
+                    <!-- Fotón emitido -->
+                    <line x1="33" y1="21" x2="39" y2="21" stroke="#ff6644" stroke-width="1.5"/>
+                    <circle cx="40" cy="21" r="1.5" fill="#ff6644" opacity="0.8"/>
+                </svg>
+                <h1>Espectros Atómicos</h1>
+            </div>
+            <p class="subtitle">Absorción, Emisión y Niveles de Energía</p>
+            <details class="header-details">
+                <summary>Descripción y conceptos clave</summary>
+                <div class="header-details-body">
+                    <p class="section-note">
+                        Los átomos solo pueden absorber o emitir fotones de energías muy concretas,
+                        correspondientes a los saltos entre sus niveles de energía. Eso origina
+                        espectros únicos, como una "huella dactilar" de cada elemento.
+                    </p>
+                    <div class="quick-rule">
+                        <span class="qr-abs">Absorción: fotón in → electrón sube ↑</span>
+                        <span class="qr-emi">Emisión: electrón baja → fotón out ↓</span>
+                        <span class="qr-sel">Solo los fotones con ΔE exacto interaccionan</span>
+                    </div>
+                </div>
+            </details>
+        </header>
+
+        <hr class="divider">
+
+        <!-- SELECTOR DE MODO -->
+        <div class="mode-switch" role="tablist">
+            <button id="mode-fotones" type="button" class="mode-btn active" role="tab" aria-selected="true">
+                Fotones
+                <span class="mode-sub">absorción / emisión</span>
+            </button>
+            <button id="mode-colision" type="button" class="mode-btn" role="tab" aria-selected="false">
+                Colisión
+                <span class="mode-sub">bombardeo electrónico</span>
+            </button>
+            <button id="mode-gas" type="button" class="mode-btn" role="tab" aria-selected="false">
+                Gas Ionizado
+                <span class="mode-sub">lámpara de gas</span>
+            </button>
+        </div>
+
+        <hr class="divider">
+
+        <!-- SELECTOR DE ÁTOMO -->
+        <section class="control-group">
+            <h2>Átomo</h2>
+            <div class="input-wrapper">
+                <label for="atom-select">Elemento</label>
+                <select id="atom-select" class="custom-select">
+                    <option value="hidrogeno">Hidrógeno (H) — 4 niveles</option>
+                    <option value="helio">Helio (He) — 3 niveles</option>
+                    <option value="sodio">Sodio (Na) — 3 niveles</option>
+                    <option value="neon">Neón (Ne) — 5 niveles</option>
+                </select>
+            </div>
+            <div id="atom-info" class="field-hint"></div>
+        </section>
+
+        <hr class="divider">
+
+        <!-- CONTROLES MODO FOTONES -->
+        <section id="controls-fotones" class="control-group mode-controls">
+            <h2>Fuente de Luz</h2>
+
+            <div class="toggle-group">
+                <button id="btn-blanca" class="toggle-btn active">Luz blanca</button>
+                <button id="btn-mono" class="toggle-btn">Monocromática</button>
+            </div>
+
+            <div id="wrapper-mono" class="input-wrapper" style="display:none">
+                <div class="label-container">
+                    <label for="slider-wl">Longitud de onda</label>
+                    <span id="val-wl" class="value-badge">550 nm</span>
+                </div>
+                <input type="range" id="slider-wl" min="380" max="780" value="550" step="2">
+                <div class="slider-bounds"><span>380 nm (violeta)</span><span>780 nm (rojo)</span></div>
+                <div id="mono-color-bar" class="mono-color-bar"></div>
+            </div>
+
+            <div class="input-wrapper">
+                <div class="label-container">
+                    <label for="slider-rate">Flujo de fotones</label>
+                    <span id="val-rate" class="value-badge">Medio</span>
+                </div>
+                <input type="range" id="slider-rate" min="1" max="5" value="3" step="1">
+                <div class="slider-bounds"><span>Lento</span><span>Rápido</span></div>
+            </div>
+        </section>
+
+        <!-- CONTROLES MODO COLISIÓN -->
+        <section id="controls-colision" class="control-group mode-controls" style="display:none">
+            <h2>Cañón de Electrones</h2>
+
+            <div class="input-wrapper">
+                <div class="label-container">
+                    <label for="slider-eenergy">Energía del electrón</label>
+                    <span id="val-eenergy" class="value-badge">3.0 eV</span>
+                </div>
+                <input type="range" id="slider-eenergy" min="0.5" max="6.0" value="3.0" step="0.1">
+                <div class="slider-bounds"><span>0.5 eV</span><span>6.0 eV</span></div>
+            </div>
+
+            <div class="input-wrapper">
+                <div class="label-container">
+                    <label for="slider-erate">Frecuencia de disparo</label>
+                    <span id="val-erate" class="value-badge">Media</span>
+                </div>
+                <input type="range" id="slider-erate" min="1" max="5" value="3" step="1">
+                <div class="slider-bounds"><span>Lenta</span><span>Rápida</span></div>
+            </div>
+
+            <div id="energy-access-panel" class="energy-access-panel"></div>
+        </section>
+
+        <!-- CONTROLES MODO GAS -->
+        <section id="controls-gas" class="control-group mode-controls" style="display:none">
+            <h2>Lámpara de Gas</h2>
+
+            <div class="input-wrapper">
+                <div class="label-container">
+                    <label for="slider-voltage">Voltaje del tubo</label>
+                    <span id="val-voltage" class="value-badge">5.0 eV</span>
+                </div>
+                <input type="range" id="slider-voltage" min="1.0" max="8.0" value="5.0" step="0.2">
+                <div class="slider-bounds"><span>1 eV</span><span>8 eV</span></div>
+            </div>
+
+            <div class="input-wrapper">
+                <div class="label-container">
+                    <label for="slider-density">Densidad del gas</label>
+                    <span id="val-density" class="value-badge">Media</span>
+                </div>
+                <input type="range" id="slider-density" min="4" max="20" value="10" step="1">
+                <div class="slider-bounds"><span>Diluid</span><span>Densa</span></div>
+            </div>
+
+            <p class="field-hint">El espectro se acumula con el tiempo. Usa el botón Limpiar para reiniciar.</p>
+        </section>
+
+        <hr class="divider">
+
+        <!-- CONTROLES COMUNES -->
+        <section class="control-group">
+            <div class="btn-row">
+                <button id="btn-pause" class="btn-primary">⏸ Pausar</button>
+                <button id="btn-reset" class="btn-secondary">↺ Limpiar</button>
+            </div>
+        </section>
+
+        <hr class="divider">
+
+        <!-- MÉTRICAS EN TIEMPO REAL -->
+        <details class="custom-details" open>
+            <summary>Estado del átomo</summary>
+            <div class="details-content">
+                <div class="metrics-grid metrics-grid-2">
+                    <div class="card card-data">
+                        <h3>Nivel actual</h3>
+                        <div class="metric"><span id="metric-level">1</span><small></small></div>
+                    </div>
+                    <div class="card card-data">
+                        <h3>Energía (eV)</h3>
+                        <div class="metric"><span id="metric-energy">0.00</span><small> eV</small></div>
+                    </div>
+                </div>
+                <div class="metrics-grid metrics-grid-2">
+                    <div class="card card-data">
+                        <h3>Fotones absorbidos</h3>
+                        <div class="metric"><span id="metric-abs">0</span></div>
+                    </div>
+                    <div class="card card-data">
+                        <h3>Fotones emitidos</h3>
+                        <div class="metric"><span id="metric-emi">0</span></div>
+                    </div>
+                </div>
+                <div class="card card-estado">
+                    <span id="metric-state" class="estado-value">Estado fundamental</span>
+                </div>
+            </div>
+        </details>
+
+        <!-- TRANSICIONES DEL ÁTOMO ACTUAL -->
+        <details class="custom-details">
+            <summary>Transiciones del átomo</summary>
+            <div class="details-content">
+                <div id="transitions-list" class="transitions-list"></div>
+            </div>
+        </details>
+
+        <!-- CONCEPTOS -->
+        <details class="custom-details">
+            <summary>Conceptos esenciales</summary>
+            <div class="details-content">
+                <div class="card edu-card">
+                    <div class="formula-list">
+                        <div class="formula">
+                            <span class="formula-name">Energía fotón:</span>
+                            <span class="formula-eq">E = h·f = h·c / λ</span>
+                        </div>
+                        <div class="formula">
+                            <span class="formula-name">Salto cuántico:</span>
+                            <span class="formula-eq">ΔE = E<sub>sup</sub> − E<sub>inf</sub></span>
+                        </div>
+                        <div class="formula">
+                            <span class="formula-name">Color fotón:</span>
+                            <span class="formula-eq">λ (nm) ↔ color visible</span>
+                        </div>
+                        <div class="formula">
+                            <span class="formula-name">Espectro:</span>
+                            <span class="formula-eq">huellas únicas de cada elemento</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </details>
+
+    </aside>
+
+    <!-- ── PANEL DE SIMULACIÓN ───────────────────────────────── -->
+    <main class="simulation-panel">
+
+        <!-- Botón de tema -->
+        <button id="theme-btn" class="theme-btn" title="Cambiar tema" aria-label="Cambiar tema" aria-expanded="false">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.07-0.94l2.03-1.58
+                c0.18-0.14,0.23-0.41,0.12-0.61l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96
+                c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41h-3.84
+                c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33
+                c-0.22-0.08-0.47,0-0.59,0.22L2.74,8.87C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58
+                C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.07,0.94l-2.03,1.58c-0.18,0.14-0.23,0.41-0.12,0.61
+                l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94
+                l0.36,2.54c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.44-0.17,0.47-0.41l0.36-2.54
+                c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32
+                c0.12-0.22,0.07-0.47-0.12-0.61L19.14,12.94z
+                M12,15.6c-1.98,0-3.6-1.62-3.6-3.6s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/>
+            </svg>
+        </button>
+        <div id="theme-panel" class="theme-panel" aria-hidden="true">
+            <p class="theme-panel-title">Tema visual</p>
+            <div class="theme-options">
+                <button class="theme-opt active" data-theme="dark"><span class="theme-swatch dark-swatch"></span>Oscuro</button>
+                <button class="theme-opt" data-theme="light"><span class="theme-swatch light-swatch"></span>Claro</button>
+                <button class="theme-opt" data-theme="contrast"><span class="theme-swatch contrast-swatch"></span>Alto contraste</button>
+            </div>
+        </div>
+
+        <div id="canvas-container"></div>
+    </main>
+
+</div>
+<script src="js/sketch.js"></script>
+</body>
+</html>
