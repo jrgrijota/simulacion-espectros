@@ -14,11 +14,11 @@
 const ATOMS_DATA = {
   hidrogeno: {
     name: 'Hidrógeno (H)', symbol: 'H',
-    note: 'Líneas de Balmer (n=2 como base). El espectro visible muestra rojo, cian y violeta.',
+    note: 'Modelo simplificado (4 niveles). Las líneas visibles H-α 656 nm, H-β 486 nm y H-γ 434 nm corresponden a la serie de Balmer.',
     nucleusColor: [180, 210, 255],
     orbitStroke: [100, 140, 220],
     levels: 4,
-    levelLabels: ['n=2', 'n=3', 'n=4', 'n=5'],
+    levelLabels: ['n=1', 'n=2', 'n=3', 'n=4'],
     energies: [0, 1.89, 2.55, 2.86],
     radii: [68, 108, 140, 168],
     transitions: [
@@ -221,6 +221,7 @@ class GasAtomEntity {
         let k = Math.round(tr.wl);
         gasPhotonCounts[k] = (gasPhotonCounts[k] || 0) + 1;
         if (tr.visible) updateSpectrum(tr.wl);
+        else updateExtSpectrum(tr.wl);
       }
       current = to;
     }
@@ -286,7 +287,8 @@ class GasElectron {
 // ─── ESTADO GLOBAL ───────────────────────────────────────────────
 const CV_W = 900, CV_H = 660;
 const ATOM_CX = 360, ATOM_CY = 270;
-const SPEC_Y  = 496, SPEC_X1 = 30, SPEC_X2 = 870, SPEC_H = 82;
+const SPEC_Y  = 490, SPEC_X1 = 30, SPEC_X2 = 870, SPEC_H = 76;
+const EXT_SPEC_Y = 572, EXT_SPEC_H = 32;
 const DIAG_X  = 626, DIAG_Y  = 30,  DIAG_W = 240, DIAG_H = 400;
 const TUBE_X  = 30,  TUBE_Y  = 28,  TUBE_W = 840, TUBE_H = 430;
 
@@ -355,6 +357,15 @@ let collSingleShot = false;
 let collWaitResult = false;
 let domBtnRafaga, domBtnSingle, domBtnFire, domWrapperSingleFire, domWrapperERate;
 
+// Modo disparo único (modo fotones)
+let fotoSingleShot  = false;
+let fotoWaitResult  = false;
+let domBtnFotoRafaga, domBtnFotoSingle, domBtnFotoFire;
+let domWrapperFRate, domWrapperFotoFire;
+
+// Espectro extendido UV/IR
+let extSpectrumLines = {};
+
 // Contadores del modo gas
 let gasPhotonCounts = {};
 let gasPhotonTotal  = 0;
@@ -380,6 +391,7 @@ function emitPhotonFromAtom(wl) {
   let p = new Photon(ATOM_CX, ATOM_CY, wl, cos(angle) * speed, sin(angle) * speed);
   outPhotons.push(p);
   if (wl >= 380 && wl <= 780) updateSpectrum(wl);
+  else updateExtSpectrum(wl);
   emiCount++;
 }
 
@@ -429,6 +441,7 @@ function resetSim() {
   if (domBtnFire && domBtnFire.elt) domBtnFire.elt.disabled = false;
   initGasMode();
   spectrumIntensity.fill(0);
+  extSpectrumLines = {};
   updateUI();
 }
 
@@ -466,17 +479,23 @@ function draw() {
   for (let i = 0; i < spectrumIntensity.length; i++) {
     spectrumIntensity[i] *= SPECTRUM_DECAY;
   }
+  for (let k in extSpectrumLines) {
+    extSpectrumLines[k] *= SPECTRUM_DECAY;
+    if (extSpectrumLines[k] < 0.01) delete extSpectrumLines[k];
+  }
 
   if (isPaused) {
     // Dibujar estado congelado + mensaje
     drawCurrentMode(false);
     drawSpectrum();
+    drawExtendedSpectrum();
     drawPausedOverlay();
     return;
   }
 
   drawCurrentMode(true);
   drawSpectrum();
+  drawExtendedSpectrum();
 
   if (frameCount % 8 === 0) updateUI();
 }
@@ -524,12 +543,14 @@ function updatePhotonMode() {
   if (stateLblT > 0) stateLblT--;
   if (activeTrT > 0) activeTrT--;
 
-  // Generar fotones entrantes
-  photonSpawnT++;
-  let spawnInterval = [24, 18, 12, 8, 5][photonRate - 1];
-  if (photonSpawnT >= spawnInterval) {
-    photonSpawnT = 0;
-    spawnIncomingPhoton();
+  // Generar fotones entrantes (solo en modo ráfaga)
+  if (!fotoSingleShot) {
+    photonSpawnT++;
+    let spawnInterval = [24, 18, 12, 8, 5][photonRate - 1];
+    if (photonSpawnT >= spawnInterval) {
+      photonSpawnT = 0;
+      spawnIncomingPhoton();
+    }
   }
 
   // Actualizar fotones entrantes
@@ -557,6 +578,14 @@ function updatePhotonMode() {
   }
 
   if (flashTimer > 0) flashTimer--;
+
+  // Disparo único: re-habilitar botón cuando el resultado se resuelve
+  if (fotoSingleShot && fotoWaitResult &&
+      electronLevel === 0 && exciteTimer === 0 &&
+      inPhotons.length === 0 && stateLblT < 30) {
+    fotoWaitResult = false;
+    if (domBtnFotoFire && domBtnFotoFire.elt) domBtnFotoFire.elt.disabled = false;
+  }
 }
 
 function spawnIncomingPhoton() {
@@ -581,7 +610,7 @@ function tryAbsorbPhoton(ph) {
   // Buscar transición desde el nivel actual que coincida con la λ del fotón
   for (let tr of atomData.transitions) {
     if (tr.from !== electronLevel) continue;
-    let tolerance = 12; // nm
+    let tolerance = 18; // nm
     if (abs(ph.wl - tr.wl) < tolerance && tr.wl >= 380 && tr.wl <= 780) {
       // ¡Absorción!
       ph.fading = true;
@@ -1222,6 +1251,106 @@ function drawSpectrum() {
   text('Espectro de emisión   (nm)', x1 + 6, y + 4);
 }
 
+// ─── ESPECTRO EXTENDIDO UV/IR ────────────────────────────────────
+function updateExtSpectrum(wl) {
+  if (wl >= 380 && wl <= 780) return;
+  let k = Math.round(wl);
+  extSpectrumLines[k] = Math.min(1.0, (extSpectrumLines[k] || 0) + 0.7);
+  let k1 = k - 3, k2 = k + 3;
+  if (k1 > 0)    extSpectrumLines[k1] = Math.min(1.0, (extSpectrumLines[k1] || 0) + 0.2);
+  if (k2 < 9999) extSpectrumLines[k2] = Math.min(1.0, (extSpectrumLines[k2] || 0) + 0.2);
+}
+
+function drawExtendedSpectrum() {
+  let x1  = SPEC_X1, x2 = SPEC_X2;
+  let y   = EXT_SPEC_Y, h = EXT_SPEC_H;
+  let w   = x2 - x1;
+  let uvW  = floor(w * 0.25);
+  let uvX1 = x1, uvX2 = x1 + uvW;
+  let gap  = 4;
+  let irX1 = uvX2 + gap, irX2 = x2;
+  let irW  = irX2 - irX1;
+
+  // Fondos de sección
+  fill(8, 10, 14);
+  stroke(55, 35, 80, 120);
+  strokeWeight(1);
+  rect(uvX1, y, uvW, h, 4, 0, 0, 4);
+  stroke(70, 38, 22, 120);
+  rect(irX1, y, irW, h, 0, 4, 4, 0);
+
+  // Degradados de tinte UV
+  noStroke();
+  for (let i = 0; i < uvW; i++) {
+    let t = i / uvW;
+    fill(floor(100 + t * 80), floor(t * 20), 230, 10);
+    rect(uvX1 + i, y + 2, 1, h - 4);
+  }
+  // Degradado IR
+  for (let i = 0; i < irW; i++) {
+    let t = i / irW;
+    fill(floor(190 - t * 110), 18, 5, 10);
+    rect(irX1 + i, y + 2, 1, h - 4);
+  }
+
+  // Etiquetas de sección
+  noStroke();
+  fill(170, 100, 235, 115);
+  textAlign(CENTER, CENTER);
+  textSize(8);
+  text('UV  (200–380 nm)', uvX1 + uvW / 2, y + h / 2);
+  fill(215, 105, 55, 115);
+  text('IR  (780–3000 nm)', irX1 + irW / 2, y + h / 2);
+
+  // Marcadores estáticos de transiciones del átomo actual (siempre visibles)
+  for (let tr of atomData.transitions) {
+    if (tr.visible) continue;
+    let wl = tr.wl;
+    let px, col;
+    if (wl >= 200 && wl < 380) {
+      px  = map(wl, 200, 380, uvX1 + 2, uvX2 - 2);
+      col = [155, 65, 215];
+    } else if (wl > 780 && wl <= 3000) {
+      px  = map(wl, 780, 3000, irX1 + 2, irX2 - 2);
+      col = [floor(map(wl, 780, 3000, 215, 75)), 42, 18];
+    } else continue;
+    stroke(col[0], col[1], col[2], 38);
+    strokeWeight(0.8);
+    line(px, y + 2, px, y + h - 2);
+  }
+
+  // Líneas de emisión animadas
+  noStroke();
+  for (let wlStr in extSpectrumLines) {
+    let wl        = parseInt(wlStr);
+    let intensity = extSpectrumLines[wlStr];
+    if (intensity < 0.02) continue;
+    let px, col;
+    if (wl >= 200 && wl < 380) {
+      px  = map(wl, 200, 380, uvX1 + 2, uvX2 - 2);
+      col = [190, 85, 255];
+    } else if (wl > 780 && wl <= 3000) {
+      px  = map(wl, 780, 3000, irX1 + 2, irX2 - 2);
+      col = [floor(map(wl, 780, 3000, 235, 85)), 50, 18];
+    } else continue;
+
+    // Halo
+    fill(col[0], col[1], col[2], intensity * 52);
+    rect(px - 2.5, y + 2, 5, h - 4);
+    // Línea central
+    fill(col[0], col[1], col[2], intensity * 235);
+    rect(px - 0.7, y + 2, 1.4, h - 4);
+    // Etiqueta debajo de la barra si la emisión es fuerte
+    if (intensity > 0.28) {
+      fill(col[0], col[1], col[2], intensity * 195);
+      textSize(7);
+      textAlign(CENTER, TOP);
+      noStroke();
+      text(wl + ' nm', px, y + h + 2);
+    }
+  }
+}
+
 // ─── CONTROLES HTML ──────────────────────────────────────────────
 function setupControls() {
   domAtomSelect        = select('#atom-select');
@@ -1262,6 +1391,11 @@ function setupControls() {
   domBtnFire           = select('#btn-fire');
   domWrapperSingleFire = select('#wrapper-single-fire');
   domWrapperERate      = select('#wrapper-erate');
+  domBtnFotoRafaga     = select('#btn-foto-rafaga');
+  domBtnFotoSingle     = select('#btn-foto-single');
+  domBtnFotoFire       = select('#btn-foto-fire');
+  domWrapperFRate      = select('#wrapper-frate');
+  domWrapperFotoFire   = select('#wrapper-foto-fire');
 
   // Selector de átomo
   domAtomSelect.changed(() => {
@@ -1379,6 +1513,31 @@ function setupControls() {
       collElectrons.push(new CollisionElectron(80, ATOM_CY + yOff, electronEnergy));
       collWaitResult = true;
       domBtnFire.elt.disabled = true;
+    }
+  });
+
+  // Disparo único (modo fotones)
+  if (domBtnFotoRafaga) domBtnFotoRafaga.mousePressed(() => {
+    fotoSingleShot = false;
+    domBtnFotoRafaga.addClass('active');
+    domBtnFotoSingle.removeClass('active');
+    if (domWrapperFRate)    domWrapperFRate.style('display', 'flex');
+    if (domWrapperFotoFire) domWrapperFotoFire.style('display', 'none');
+    resetSim();
+  });
+  if (domBtnFotoSingle) domBtnFotoSingle.mousePressed(() => {
+    fotoSingleShot = true;
+    domBtnFotoSingle.addClass('active');
+    domBtnFotoRafaga.removeClass('active');
+    if (domWrapperFRate)    domWrapperFRate.style('display', 'none');
+    if (domWrapperFotoFire) domWrapperFotoFire.style('display', 'block');
+    resetSim();
+  });
+  if (domBtnFotoFire) domBtnFotoFire.mousePressed(() => {
+    if (!fotoWaitResult && !isPaused) {
+      spawnIncomingPhoton();
+      fotoWaitResult = true;
+      domBtnFotoFire.elt.disabled = true;
     }
   });
 
