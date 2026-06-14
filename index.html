@@ -71,16 +71,15 @@
         <!-- SELECTOR DE ÁTOMO -->
         <section class="control-group">
             <h2>Átomo</h2>
-            <div class="input-wrapper">
+            <div class="input-wrapper" style="flex-direction:row; align-items:center; gap:10px">
                 <label for="atom-select">Elemento</label>
-                <select id="atom-select" class="custom-select">
+                <select id="atom-select" class="custom-select" style="flex:1">
                     <option value="hidrogeno">Hidrógeno (H) — 4 niveles</option>
                     <option value="helio">Helio (He) — 3 niveles</option>
                     <option value="sodio">Sodio (Na) — 3 niveles</option>
                     <option value="neon">Neón (Ne) — 5 niveles</option>
                 </select>
             </div>
-            <div id="atom-info" class="field-hint"></div>
         </section>
 
         <hr class="divider">
@@ -101,15 +100,14 @@
                 </div>
                 <input type="range" id="slider-wl" min="380" max="780" value="550" step="2">
                 <div class="slider-bounds"><span>380 nm (violeta)</span><span>780 nm (rojo)</span></div>
-                <div id="mono-color-bar" class="mono-color-bar"></div>
             </div>
 
             <div class="toggle-group">
-                <button id="btn-foto-rafaga" class="toggle-btn active">Ráfaga</button>
-                <button id="btn-foto-single" class="toggle-btn">Un fotón</button>
+                <button id="btn-foto-single" class="toggle-btn active">Un fotón</button>
+                <button id="btn-foto-rafaga" class="toggle-btn">Emisión continua</button>
             </div>
 
-            <div id="wrapper-frate" class="input-wrapper">
+            <div id="wrapper-frate" class="input-wrapper" style="display:none">
                 <div class="label-container">
                     <label for="slider-rate">Flujo de fotones</label>
                     <span id="val-rate" class="value-badge">Medio</span>
@@ -118,10 +116,6 @@
                 <div class="slider-bounds"><span>Lento</span><span>Rápido</span></div>
             </div>
 
-            <div id="wrapper-foto-fire" style="display:none; margin-top:6px">
-                <button id="btn-foto-fire" class="btn-primary" style="width:100%">⚡ Disparar fotón</button>
-                <p class="field-hint" style="margin-top:4px">Dispara un único fotón hacia el átomo.</p>
-            </div>
         </section>
 
         <!-- CONTROLES MODO COLISIÓN -->
@@ -138,22 +132,17 @@
             </div>
 
             <div class="toggle-group">
-                <button id="btn-rafaga" class="toggle-btn active">Ráfaga</button>
-                <button id="btn-single" class="toggle-btn">Disparo único</button>
+                <button id="btn-single" class="toggle-btn active">Disparo único</button>
+                <button id="btn-rafaga" class="toggle-btn">Haz continuo</button>
             </div>
 
-            <div id="wrapper-erate" class="input-wrapper">
+            <div id="wrapper-erate" class="input-wrapper" style="display:none">
                 <div class="label-container">
                     <label for="slider-erate">Frecuencia de disparo</label>
                     <span id="val-erate" class="value-badge">Media</span>
                 </div>
                 <input type="range" id="slider-erate" min="1" max="5" value="3" step="1">
                 <div class="slider-bounds"><span>Lenta</span><span>Rápida</span></div>
-            </div>
-
-            <div id="wrapper-single-fire" style="display:none">
-                <button id="btn-fire" class="btn-primary" style="width:100%;margin-top:6px">⚡ Disparar electrón</button>
-                <p class="field-hint" style="margin-top:4px">Un electrón a la vez. Observa el resultado antes del siguiente disparo.</p>
             </div>
 
             <div id="energy-access-panel" class="energy-access-panel"></div>
@@ -265,6 +254,6 @@
     </main>
 
 </div>
-<script src="js/sketch.js"></script>
+<script src="js/sketch.js?v=20260614l"></script>
 </body>
 </html>

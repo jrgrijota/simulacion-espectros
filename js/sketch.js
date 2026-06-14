@@ -189,43 +189,68 @@ class GasAtomEntity {
     this.exciteTimer = 0;
     this.exciteTarget = 0;
     this.glowTimer = 0;
+    this.cascadePath = [];
+    this.cascadeTimer = 0;
+    this.cooldown = 0;
   }
   excite(targetLevel) {
     this.level = targetLevel;
     this.exciteTarget = targetLevel;
     this.exciteTimer = floor(random(40, 100));
     this.glowTimer = 20;
+    this.cascadePath = [];
+    this.cascadeTimer = 0;
     absCount++;
   }
-  update() {
-    if (this.glowTimer > 0) this.glowTimer--;
-    if (this.level > 0 && this.exciteTimer > 0) {
-      this.exciteTimer--;
-      if (this.exciteTimer === 0) {
-        this.deExcite();
-      }
-    }
-  }
-  deExcite() {
-    // Cascada: bajar un nivel a la vez o saltar directamente (aleatorio)
-    let current = this.level;
+  _buildCascade(startLevel) {
+    let path = [];
+    let current = startLevel;
     while (current > 0) {
       let targets = [];
       for (let t = 0; t < current; t++) targets.push(t);
       let to = targets[floor(random(targets.length))];
-      let tr = findTransition(this.data, to, current);
-      if (tr) {
-        emitPhotonFromGas(this.x, this.y, tr.wl);
-        emiCount++;
-        gasPhotonTotal++;
-        let k = Math.round(tr.wl);
-        gasPhotonCounts[k] = (gasPhotonCounts[k] || 0) + 1;
-        if (tr.visible) updateSpectrum(tr.wl);
-        else updateExtSpectrum(tr.wl);
-      }
+      path.push({ from: current, to: to });
       current = to;
     }
-    this.level = 0;
+    return path;
+  }
+  update() {
+    if (this.glowTimer > 0) this.glowTimer--;
+    if (this.cooldown > 0) this.cooldown--;
+    // Espera inicial antes de iniciar la cascada
+    if (this.level > 0 && this.exciteTimer > 0 && this.cascadePath.length === 0) {
+      this.exciteTimer--;
+      if (this.exciteTimer === 0) {
+        this.cascadePath = this._buildCascade(this.level);
+        this.cascadeTimer = 120;  // 2 s al nivel superior antes del primer salto
+        return;  // no decrementar el timer en el mismo frame que se construye la cascada
+      }
+      return;
+    }
+    // Pasos de la cascada: 2 s exactos entre cada emisión
+    if (this.cascadePath.length > 0) {
+      this.cascadeTimer--;
+      if (this.cascadeTimer <= 0) {
+        let step = this.cascadePath.shift();
+        let tr = findTransition(this.data, step.to, step.from);
+        if (tr) {
+          emitPhotonFromGas(this.x, this.y, tr.wl);
+          emiCount++;
+          gasPhotonTotal++;
+          let k = Math.round(tr.wl);
+          gasPhotonCounts[k] = (gasPhotonCounts[k] || 0) + 1;
+          if (tr.visible) updateSpectrum(tr.wl);
+          else updateExtSpectrum(tr.wl);
+        }
+        this.level = step.to;
+        if (this.cascadePath.length > 0) {
+          this.cascadeTimer = 120;          // 2 s hasta el siguiente salto
+        } else {
+          this.cascadeTimer = 0;
+          this.cooldown = 120;              // 2 s en el nivel base antes de re-excitarse
+        }
+      }
+    }
   }
   draw() {
     let nc = this.data.nucleusColor;
@@ -252,6 +277,12 @@ class GasAtomEntity {
     textSize(10);
     noStroke();
     text(this.data.symbol, this.x, this.y);
+    // Etiqueta del nivel actual durante la cascada
+    if (glow) {
+      fill(255, 255, 150, 210);
+      textSize(9);
+      text(this.data.levelLabels[this.level], this.x, this.y + 16);
+    }
   }
 }
 
@@ -297,6 +328,8 @@ let currentAtomKey = 'hidrogeno';
 let atomData       = null;
 let electronLevel  = 0;
 let exciteTimer    = 0;
+let atomCascade    = [];   // cascada de desexcitación paso a paso (modos fotón/colisión)
+let atomCascadeT   = 0;    // frames restantes hasta la siguiente emisión
 let absCount       = 0;
 let emiCount       = 0;
 let isPaused       = false;
@@ -326,7 +359,7 @@ let gasElectronT  = 0;
 
 // Espectro (índice 0 = 380nm, índice 400 = 780nm)
 let spectrumIntensity = new Float32Array(401);
-const SPECTRUM_DECAY  = 0.993;
+const SPECTRUM_DECAY  = 0.9992;
 
 // DOM
 let domAtomSelect, domBtnBlanca, domBtnMono, domSliderWl, domValWl;
@@ -335,10 +368,10 @@ let domSliderEEnergy, domValEEnergy, domSliderERate, domValERate;
 let domSliderVoltage, domValVoltage, domSliderDensity, domValDensity;
 let domBtnPause, domBtnReset;
 let domMetricLevel, domMetricEnergy, domMetricAbs, domMetricEmi, domMetricState;
-let domTransitionsList, domEnergyAccessPanel, domAtomInfo;
+let domTransitionsList, domEnergyAccessPanel;
 let domModeFotones, domModeColision, domModeGas;
 let domCtrlFotones, domCtrlColision, domCtrlGas;
-let domMonoWrapper, domMonoColorBar;
+let domMonoWrapper;
 
 // Animación de radio del electrón (transición suave entre órbitas)
 let electronRCurrent = 68;
@@ -352,16 +385,13 @@ let stateLblT   = 0;
 let activeTr  = null;
 let activeTrT = 0;
 
-// Modo disparo único (modo colisión)
-let collSingleShot = false;
-let collWaitResult = false;
-let domBtnRafaga, domBtnSingle, domBtnFire, domWrapperSingleFire, domWrapperERate;
+// Modo disparo único (modo colisión) — activo por defecto
+let collSingleShot = true;
+let domBtnRafaga, domBtnSingle, domWrapperERate;
 
-// Modo disparo único (modo fotones)
-let fotoSingleShot  = false;
-let fotoWaitResult  = false;
-let domBtnFotoRafaga, domBtnFotoSingle, domBtnFotoFire;
-let domWrapperFRate, domWrapperFotoFire;
+// Modo disparo único (modo fotones) — activo por defecto
+let fotoSingleShot  = true;
+let domBtnFotoRafaga, domBtnFotoSingle, domWrapperFRate;
 
 // Espectro extendido UV/IR
 let extSpectrumLines = {};
@@ -495,31 +525,53 @@ function emitPhotonFromGas(x, y, wl) {
   outPhotons.push(new Photon(x, y, wl, cos(angle) * speed, sin(angle) * speed));
 }
 
+// Inicia la cascada de desexcitación: construye el camino completo de saltos
+// pero NO emite nada todavía. Las emisiones se reparten en updateAtomCascade(),
+// con 3 s (180 frames) de espera en cada nivel intermedio.
 function deExciteAtom() {
   if (electronLevel === 0) return;
+  atomCascade = [];
   let current = electronLevel;
   while (current > 0) {
     let possible = [];
     for (let t = 0; t < current; t++) possible.push(t);
     let to = possible[floor(random(possible.length))];
-    let tr = findTransition(atomData, to, current);
-    if (tr) {
-      emitPhotonFromAtom(tr.wl);
-      stateLbl    = `EMITE  ${tr.wl} nm    (${atomData.levelLabels[tr.to]} → ${atomData.levelLabels[tr.from]})`;
-      stateLblClr = wlToRGB(tr.wl);
-      stateLblT   = 120;
-      activeTr    = tr;
-      activeTrT   = 120;
-    }
+    atomCascade.push({ from: current, to: to });
     current = to;
   }
-  electronLevel = 0;
-  flashTimer = 0;
+  atomCascadeT = 120;  // 2 s en el nivel superior antes de la primera emisión
+}
+
+// Avanza la cascada un frame: cuando el temporizador llega a 0 emite UN fotón,
+// baja UN nivel y reinicia 2 s hasta la siguiente emisión.
+function updateAtomCascade() {
+  if (atomCascade.length === 0) return;
+  atomCascadeT--;
+  if (atomCascadeT > 0) return;
+  let step = atomCascade.shift();
+  let tr = findTransition(atomData, step.to, step.from);
+  if (tr) {
+    emitPhotonFromAtom(tr.wl);
+    stateLbl    = `EMITE  ${tr.wl} nm    (${atomData.levelLabels[tr.to]} → ${atomData.levelLabels[tr.from]})`;
+    stateLblClr = wlToRGB(tr.wl);
+    stateLblT   = 120;
+    activeTr    = tr;
+    activeTrT   = 120;
+  }
+  electronLevel = step.to;
+  if (atomCascade.length > 0) {
+    atomCascadeT = 120;        // 2 s hasta el siguiente salto
+  } else {
+    atomCascadeT = 0;
+    flashTimer   = 0;
+  }
 }
 
 function resetSim() {
   electronLevel    = 0;
   exciteTimer      = 0;
+  atomCascade      = [];
+  atomCascadeT     = 0;
   flashTimer       = 0;
   absCount         = 0;
   emiCount         = 0;
@@ -531,8 +583,6 @@ function resetSim() {
   stateLblT        = 0;
   activeTr         = null;
   activeTrT        = 0;
-  collWaitResult   = false;
-  if (domBtnFire && domBtnFire.elt) domBtnFire.elt.disabled = false;
   if (atomData) diagElectronRY = diagTargetY();
   initGasMode();
   spectrumIntensity.fill(0);
@@ -630,6 +680,56 @@ function drawPhotonMode(animate) {
   textSize(13);
   noStroke();
   text(lightType === 'white' ? 'Luz blanca' : monoWl + ' nm', 65, 20);
+
+  if (fotoSingleShot) drawSourceFireHint('fotón');
+}
+
+// Banner + resalte de la fuente para el modo "disparo único".
+// La fuente está a la izquierda, centrada en ATOM_CY.
+function drawSourceFireHint(what) {
+  let sy = ATOM_CY;
+  // Marco/resalte pulsante alrededor de la fuente
+  let pulse = (sin(frameCount * 0.12) + 1) / 2;  // 0..1
+  noFill();
+  stroke(120, 220, 255, 70 + pulse * 150);
+  strokeWeight(2 + pulse * 1.5);
+  rect(10, sy - 56, 60, 112, 12);
+
+  // Banner de texto en 2 líneas, debajo de la fuente
+  let ln1 = '⚡ Haz clic en la fuente';
+  let ln2 = 'para disparar un ' + what;
+  textSize(11);
+  let pad = 7, lineH = 15;
+  let tw = max(textWidth(ln1), textWidth(ln2)) + pad * 2;
+  let bx = 10, by = sy + 68;
+  noStroke();
+  fill(0, 0, 0, 160);
+  rect(bx, by, tw, lineH * 2 + pad * 2, 7);
+  fill(150, 225, 255, 235);
+  textAlign(LEFT, TOP);
+  text(ln1, bx + pad, by + pad);
+  text(ln2, bx + pad, by + pad + lineH);
+}
+
+// ¿El ratón está sobre la fuente (zona clicable de disparo)?
+function isOverSource() {
+  let sy = ATOM_CY;
+  if (mouseY < sy - 56 || mouseY > sy + 56) return false;
+  if (currentMode === 'fotones')  return mouseX >= 8 && mouseX <= 72;
+  if (currentMode === 'colision') return mouseX >= 6 && mouseX <= 72;
+  return false;
+}
+
+function mousePressed() {
+  if (isPaused || !isOverSource()) return;
+  // Sin espera entre disparos: cada clic dispara. El átomo simplemente no
+  // absorberá si ya está excitado o en una cascada de desexcitación.
+  if (currentMode === 'fotones' && fotoSingleShot) {
+    spawnIncomingPhoton();
+  } else if (currentMode === 'colision' && collSingleShot) {
+    let yOff = random(-20, 20);
+    collElectrons.push(new CollisionElectron(80, ATOM_CY + yOff, electronEnergy));
+  }
 }
 
 function updatePhotonMode() {
@@ -654,7 +754,7 @@ function updatePhotonMode() {
     ph.update();
     // Colisión con átomo
     let d = dist(ph.x, ph.y, ATOM_CX, ATOM_CY);
-    if (!ph.fading && d < atomData.radii[0] + 12) {
+    if (!ph.fading && electronLevel === 0 && atomCascade.length === 0 && d < atomData.radii[0] + 12) {
       tryAbsorbPhoton(ph);
     }
     if (ph.done) inPhotons.splice(i, 1);
@@ -671,17 +771,10 @@ function updatePhotonMode() {
     exciteTimer--;
     if (exciteTimer === 0) deExciteAtom();
   }
+  updateAtomCascade();
 
   if (flashTimer > 0) flashTimer--;
   diagElectronRY += (diagTargetY() - diagElectronRY) * 0.10;
-
-  // Disparo único: re-habilitar botón cuando el resultado se resuelve
-  if (fotoSingleShot && fotoWaitResult &&
-      electronLevel === 0 && exciteTimer === 0 &&
-      inPhotons.length === 0 && stateLblT < 30) {
-    fotoWaitResult = false;
-    if (domBtnFotoFire && domBtnFotoFire.elt) domBtnFotoFire.elt.disabled = false;
-  }
 }
 
 function spawnIncomingPhoton() {
@@ -755,13 +848,6 @@ function drawLightSource() {
   noStroke();
   fill(...CT.srcArrow, 120);
   triangle(88, sy - 4, 88, sy + 4, 94, sy);
-
-  // Icono de lámpara
-  fill(...CT.srcArrow, 100);
-  noStroke();
-  textAlign(CENTER, CENTER);
-  textSize(12);
-  text('☀', sx - 4, sy - 58);
 }
 
 // ─── MODO COLISIÓN ───────────────────────────────────────────────
@@ -774,6 +860,8 @@ function drawCollisionMode(animate) {
   for (let ce of collElectrons) ce.draw();
   for (let ph of outPhotons)    ph.draw();
   drawAtomStateLabel();
+
+  if (collSingleShot) drawSourceFireHint('electrón');
 }
 
 function updateCollisionMode() {
@@ -796,7 +884,7 @@ function updateCollisionMode() {
     let e = collElectrons[i];
     e.update();
     let d = dist(e.x, e.y, ATOM_CX, ATOM_CY);
-    if (!e.collided && d < atomData.radii[0] + 10) {
+    if (!e.collided && electronLevel === 0 && atomCascade.length === 0 && d < atomData.radii[0] + 10) {
       tryCollisionExcite(e);
     }
     if (e.done) collElectrons.splice(i, 1);
@@ -811,16 +899,9 @@ function updateCollisionMode() {
     exciteTimer--;
     if (exciteTimer === 0) deExciteAtom();
   }
+  updateAtomCascade();
   if (flashTimer > 0) flashTimer--;
   diagElectronRY += (diagTargetY() - diagElectronRY) * 0.10;
-
-  // Disparo único: re-habilitar botón cuando el resultado se resuelve
-  if (collSingleShot && collWaitResult &&
-      electronLevel === 0 && exciteTimer === 0 &&
-      collElectrons.length === 0 && stateLblT < 30) {
-    collWaitResult = false;
-    if (domBtnFire && domBtnFire.elt) domBtnFire.elt.disabled = false;
-  }
 }
 
 function tryCollisionExcite(electron) {
@@ -904,19 +985,19 @@ function drawGasMode(animate) {
   noStroke();
   rect(TUBE_X + 2, TUBE_Y + 2, TUBE_W - 4, TUBE_H - 4, 7);
 
-  // Electrodos
+  // Electrodos (altura completa del tubo)
   fill(...CT.electrode, 200);
   noStroke();
-  rect(TUBE_X + 3, TUBE_Y + TUBE_H / 2 - 15, 12, 30, 2);
-  rect(TUBE_X + TUBE_W - 15, TUBE_Y + TUBE_H / 2 - 15, 12, 30, 2);
+  rect(TUBE_X + 3, TUBE_Y + 4, 12, TUBE_H - 8, 2);
+  rect(TUBE_X + TUBE_W - 15, TUBE_Y + 4, 12, TUBE_H - 8, 2);
 
-  // Etiquetas cátodo / ánodo
+  // Etiquetas cátodo / ánodo (encima del tubo)
   fill(...CT.tubeText, 200);
   textAlign(CENTER, BOTTOM);
   textSize(11);
   noStroke();
-  text('Cátodo (−)', TUBE_X + 9, TUBE_Y + TUBE_H / 2 - 18);
-  text('Ánodo (+)', TUBE_X + TUBE_W - 9, TUBE_Y + TUBE_H / 2 - 18);
+  text('Cátodo (−)', TUBE_X + 9, TUBE_Y - 3);
+  text('Ánodo (+)', TUBE_X + TUBE_W - 9, TUBE_Y - 3);
 
   for (let ga of gasAtomsList) ga.draw();
   for (let ge of gasElectrons) ge.draw();
@@ -950,7 +1031,7 @@ function updateGasMode() {
     e.update();
     // Colisión con átomos
     for (let a of gasAtomsList) {
-      if (a.level === 0 && dist(e.x, e.y, a.x, a.y) < 16) {
+      if (a.level === 0 && a.cooldown <= 0 && dist(e.x, e.y, a.x, a.y) < 16) {
         tryGasExcite(e, a);
         break;
       }
@@ -1011,19 +1092,22 @@ function drawAtom(cx, cy) {
     noFill();
     circle(cx, cy, r * 2);
 
-    // Etiqueta del nivel (izquierda)
-    let lx = cx - r - 6;
-    let ly = cy;
-    fill(...CT.orbitLbl, 120);
+    // Etiqueta del nivel + energía en la parte SUPERIOR de cada órbita, apiladas
+    // verticalmente (las flechas de transición van por la zona inferior). Una
+    // sola línea por nivel: "n=4  2.86 eV".
+    let lx = cx;
+    let ly = cy - r - 4;
     noStroke();
-    textAlign(RIGHT, CENTER);
-    textSize(12);
-    text(atom.levelLabels[i], lx, ly);
-
-    // Energía del nivel
-    fill(...CT.txtMid, 100);
     textSize(11);
-    text(atom.energies[i].toFixed(2) + ' eV', lx, ly + 11);
+    let eStr   = atom.energies[i].toFixed(2) + ' eV';
+    let wLabel = textWidth(atom.levelLabels[i] + '  ');
+    let wEnergy = textWidth(eStr);
+    let xLeft  = lx - (wLabel + wEnergy) / 2;
+    textAlign(LEFT, BOTTOM);
+    fill(...CT.orbitLbl, 160);
+    text(atom.levelLabels[i], xLeft, ly);
+    fill(...CT.txtMid, 120);
+    text(eStr, xLeft + wLabel, ly);
   }
 
   // ── Núcleo ──
@@ -1070,69 +1154,70 @@ function drawAtom(cx, cy) {
 
 function drawTransitionArrows(cx, cy) {
   let atom = atomData;
-  // Solo transiciones visibles (UV/IR se muestran en el diagrama de energía)
-  let visTrs = atom.transitions.filter(t => t.visible);
+  let allTrs = atom.transitions;
 
-  // Distribuir ángulos equitativamente en el cuadrante superior-derecho
-  let baseAngle = -PI / 8;          // -22.5° desde horizontal
-  let angleStep = PI / (visTrs.length + 1) * 0.55;
+  // Repartir ángulos en el cuadrante inferior-derecho (22.5° → 75°)
+  let startAngle = PI / 8;
+  let endAngle   = PI * 5 / 12;
+  let n = allTrs.length;
+  let angleStep  = n > 1 ? (endAngle - startAngle) / (n - 1) : 0;
 
-  for (let i = 0; i < visTrs.length; i++) {
-    let tr  = visTrs[i];
+  for (let i = 0; i < n; i++) {
+    let tr  = allTrs[i];
     let r1  = atom.radii[tr.from];
     let r2  = atom.radii[tr.to];
-    let col = wlToRGB(tr.wl);
-    let ang = baseAngle - i * angleStep;
 
-    // Puntos en los bordes de cada órbita (radiales)
-    let ix1 = cx + r1 * cos(ang),  iy1 = cy + r1 * sin(ang);
-    let ix2 = cx + r2 * cos(ang),  iy2 = cy + r2 * sin(ang);
+    // Color según región espectral
+    let col, baseAlpha, lblAlpha, strokeW;
+    if (tr.visible) {
+      col = wlToRGB(tr.wl);
+      baseAlpha = 190; lblAlpha = 220; strokeW = 1.8;
+    } else if (tr.wl < 380) {
+      col = [170, 80, 230];   // UV: violeta
+      baseAlpha = 110; lblAlpha = 150; strokeW = 1.2;
+    } else {
+      col = [190, 70, 40];    // IR: rojo oscuro
+      baseAlpha = 110; lblAlpha = 150; strokeW = 1.2;
+    }
 
-    // Línea entre órbitas
+    let ang = startAngle + i * angleStep;
+    let ix1 = cx + r1 * cos(ang), iy1 = cy + r1 * sin(ang);
+    let ix2 = cx + r2 * cos(ang), iy2 = cy + r2 * sin(ang);
+
     let isActiveTr = activeTrT > 0 && activeTr &&
       ((tr.from === activeTr.from && tr.to === activeTr.to) ||
        (tr.from === activeTr.to   && tr.to === activeTr.from));
-    let trAlpha = isActiveTr ? min(255, map(activeTrT, 0, 120, 60, 255)) : 190;
+    let trAlpha = isActiveTr ? min(255, map(activeTrT, 0, 120, 60, 255)) : baseAlpha;
+
     stroke(col[0], col[1], col[2], trAlpha);
-    strokeWeight(isActiveTr ? 3.2 : 1.8);
+    strokeWeight(isActiveTr ? 3.2 : strokeW);
     line(ix1, iy1, ix2, iy2);
 
-    // Cabeza de flecha hacia afuera (absorción ↑)
+    // Cabeza de flecha — punta exactamente sobre la órbita exterior
     let dx = ix2 - ix1, dy = iy2 - iy1;
     let len = sqrt(dx * dx + dy * dy);
     let ux = dx / len, uy = dy / len;
-    let px = -uy, py = ux; // perpendicular
+    let px = -uy, py = ux;
     noStroke();
-    fill(col[0], col[1], col[2], 210);
+    fill(col[0], col[1], col[2], isActiveTr ? 255 : (tr.visible ? 210 : 120));
     triangle(
-      ix2 + ux * 5, iy2 + uy * 5,
-      ix2 - ux * 4 + px * 3.5, iy2 - uy * 4 + py * 3.5,
-      ix2 - ux * 4 - px * 3.5, iy2 - uy * 4 - py * 3.5
+      ix2, iy2,
+      ix2 - ux * 9 + px * 4, iy2 - uy * 9 + py * 4,
+      ix2 - ux * 9 - px * 4, iy2 - uy * 9 - py * 4
     );
 
-    // Pequeño círculo en el nivel inferior
-    fill(col[0], col[1], col[2], 140);
+    // Círculo en el nivel inferior
+    fill(col[0], col[1], col[2], tr.visible ? 140 : 80);
     circle(ix1, iy1, 5);
 
-    // Etiqueta: longitud de onda cerca de la mitad de la flecha
-    let mx = (ix1 + ix2) / 2 + ux * 6 + px * 8;
-    let my = (iy1 + iy2) / 2 + uy * 6 + py * 8;
-    fill(col[0], col[1], col[2], 220);
+    // Etiqueta justo más allá de la punta, en dirección radial
+    let lx = ix2 + ux * 16;
+    let ly = iy2 + uy * 16;
+    fill(col[0], col[1], col[2], isActiveTr ? 255 : lblAlpha);
     noStroke();
     textAlign(CENTER, CENTER);
-    textSize(11);
-    text(tr.wl + ' nm', mx, my);
-  }
-
-  // Indicar transiciones invisibles con etiqueta global (no arrows)
-  let invTrs = atom.transitions.filter(t => !t.visible);
-  if (invTrs.length > 0) {
-    fill(...CT.transNote, 100);
-    noStroke();
-    textAlign(LEFT, CENTER);
-    textSize(7.5);
-    let maxR = atom.radii[atom.levels - 1];
-    text('+ ' + invTrs.length + ' IR/UV (ver diagrama →)', cx + maxR + 8, cy + maxR * 0.55);
+    textSize(tr.visible ? 11 : 10);
+    text(tr.visible ? (tr.wl + ' nm') : tr.name, lx, ly);
   }
 }
 
@@ -1500,7 +1585,6 @@ function setupControls() {
   domMetricState       = select('#metric-state');
   domTransitionsList   = select('#transitions-list');
   domEnergyAccessPanel = select('#energy-access-panel');
-  domAtomInfo          = select('#atom-info');
   domModeFotones       = select('#mode-fotones');
   domModeColision      = select('#mode-colision');
   domModeGas           = select('#mode-gas');
@@ -1508,17 +1592,12 @@ function setupControls() {
   domCtrlColision      = select('#controls-colision');
   domCtrlGas           = select('#controls-gas');
   domMonoWrapper       = select('#wrapper-mono');
-  domMonoColorBar      = select('#mono-color-bar');
   domBtnRafaga         = select('#btn-rafaga');
   domBtnSingle         = select('#btn-single');
-  domBtnFire           = select('#btn-fire');
-  domWrapperSingleFire = select('#wrapper-single-fire');
   domWrapperERate      = select('#wrapper-erate');
   domBtnFotoRafaga     = select('#btn-foto-rafaga');
   domBtnFotoSingle     = select('#btn-foto-single');
-  domBtnFotoFire       = select('#btn-foto-fire');
   domWrapperFRate      = select('#wrapper-frate');
-  domWrapperFotoFire   = select('#wrapper-foto-fire');
 
   // Selector de átomo
   domAtomSelect.changed(() => {
@@ -1613,55 +1692,37 @@ function setupControls() {
     if (currentMode === 'gas') initGasMode();
   });
 
-  // Disparo único / Ráfaga (modo colisión)
+  // Disparo único / Ráfaga (modo colisión) — en disparo único se dispara
+  // haciendo clic en la fuente del lienzo (ver mousePressed / drawSourceFireHint)
   if (domBtnRafaga) domBtnRafaga.mousePressed(() => {
     collSingleShot = false;
     domBtnRafaga.addClass('active');
     domBtnSingle.removeClass('active');
-    if (domWrapperERate)      domWrapperERate.style('display', 'flex');
-    if (domWrapperSingleFire) domWrapperSingleFire.style('display', 'none');
+    if (domWrapperERate) domWrapperERate.style('display', 'flex');
     resetSim();
   });
   if (domBtnSingle) domBtnSingle.mousePressed(() => {
     collSingleShot = true;
     domBtnSingle.addClass('active');
     domBtnRafaga.removeClass('active');
-    if (domWrapperERate)      domWrapperERate.style('display', 'none');
-    if (domWrapperSingleFire) domWrapperSingleFire.style('display', 'block');
+    if (domWrapperERate) domWrapperERate.style('display', 'none');
     resetSim();
   });
-  if (domBtnFire) domBtnFire.mousePressed(() => {
-    if (!collWaitResult && !isPaused) {
-      let yOff = random(-20, 20);
-      collElectrons.push(new CollisionElectron(80, ATOM_CY + yOff, electronEnergy));
-      collWaitResult = true;
-      domBtnFire.elt.disabled = true;
-    }
-  });
 
-  // Disparo único (modo fotones)
+  // Disparo único / Ráfaga (modo fotones)
   if (domBtnFotoRafaga) domBtnFotoRafaga.mousePressed(() => {
     fotoSingleShot = false;
     domBtnFotoRafaga.addClass('active');
     domBtnFotoSingle.removeClass('active');
-    if (domWrapperFRate)    domWrapperFRate.style('display', 'flex');
-    if (domWrapperFotoFire) domWrapperFotoFire.style('display', 'none');
+    if (domWrapperFRate) domWrapperFRate.style('display', 'flex');
     resetSim();
   });
   if (domBtnFotoSingle) domBtnFotoSingle.mousePressed(() => {
     fotoSingleShot = true;
     domBtnFotoSingle.addClass('active');
     domBtnFotoRafaga.removeClass('active');
-    if (domWrapperFRate)    domWrapperFRate.style('display', 'none');
-    if (domWrapperFotoFire) domWrapperFotoFire.style('display', 'block');
+    if (domWrapperFRate) domWrapperFRate.style('display', 'none');
     resetSim();
-  });
-  if (domBtnFotoFire) domBtnFotoFire.mousePressed(() => {
-    if (!fotoWaitResult && !isPaused) {
-      spawnIncomingPhoton();
-      fotoWaitResult = true;
-      domBtnFotoFire.elt.disabled = true;
-    }
   });
 
   // Tema
@@ -1674,6 +1735,7 @@ function setupControls() {
   updateSliderFill(domSliderERate);
   updateSliderFill(domSliderVoltage);
   updateSliderFill(domSliderDensity);
+  updateMonoBar();
 }
 
 function switchMode(mode) {
@@ -1689,8 +1751,6 @@ function switchMode(mode) {
 }
 
 function updateAtomDisplay() {
-  // Nota del átomo
-  if (domAtomInfo) domAtomInfo.html(atomData.note);
   // Lista de transiciones
   updateTransitionsList();
   updateEnergyAccessPanel();
@@ -1759,9 +1819,16 @@ function updateUI() {
 }
 
 function updateMonoBar() {
-  if (!domMonoColorBar) return;
+  // Colorea el propio slider con el color de la longitud de onda seleccionada
+  if (!domSliderWl || !domSliderWl.elt) return;
   let [r, g, b] = wlToRGB(monoWl);
-  domMonoColorBar.style('background', `rgb(${r},${g},${b})`);
+  let col    = `rgb(${r},${g},${b})`;
+  let colDim = `rgba(${r},${g},${b},0.22)`;
+  let el = domSliderWl.elt;
+  let min = parseFloat(el.min), max = parseFloat(el.max), val = parseFloat(el.value);
+  let pct = ((val - min) / (max - min) * 100).toFixed(1) + '%';
+  // Parte recorrida con el color; resto atenuado
+  el.style.background = `linear-gradient(to right, ${col} 0%, ${col} ${pct}, ${colDim} ${pct})`;
 }
 
 function updateSliderFill(slider) {
