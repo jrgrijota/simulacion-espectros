@@ -71,16 +71,15 @@
         <!-- SELECTOR DE ÁTOMO -->
         <section class="control-group">
             <h2>Átomo</h2>
-            <div class="input-wrapper">
+            <div class="input-wrapper" style="flex-direction:row; align-items:center; gap:10px">
                 <label for="atom-select">Elemento</label>
-                <select id="atom-select" class="custom-select">
+                <select id="atom-select" class="custom-select" style="flex:1">
                     <option value="hidrogeno">Hidrógeno (H) — 4 niveles</option>
                     <option value="helio">Helio (He) — 3 niveles</option>
                     <option value="sodio">Sodio (Na) — 3 niveles</option>
                     <option value="neon">Neón (Ne) — 5 niveles</option>
                 </select>
             </div>
-            <div id="atom-info" class="field-hint"></div>
         </section>
 
         <hr class="divider">
@@ -101,10 +100,14 @@
                 </div>
                 <input type="range" id="slider-wl" min="380" max="780" value="550" step="2">
                 <div class="slider-bounds"><span>380 nm (violeta)</span><span>780 nm (rojo)</span></div>
-                <div id="mono-color-bar" class="mono-color-bar"></div>
             </div>
 
-            <div class="input-wrapper">
+            <div class="toggle-group">
+                <button id="btn-foto-single" class="toggle-btn active">Un fotón</button>
+                <button id="btn-foto-rafaga" class="toggle-btn">Emisión continua</button>
+            </div>
+
+            <div id="wrapper-frate" class="input-wrapper" style="display:none">
                 <div class="label-container">
                     <label for="slider-rate">Flujo de fotones</label>
                     <span id="val-rate" class="value-badge">Medio</span>
@@ -112,6 +115,7 @@
                 <input type="range" id="slider-rate" min="1" max="5" value="3" step="1">
                 <div class="slider-bounds"><span>Lento</span><span>Rápido</span></div>
             </div>
+
         </section>
 
         <!-- CONTROLES MODO COLISIÓN -->
@@ -127,7 +131,12 @@
                 <div class="slider-bounds"><span>0.5 eV</span><span>6.0 eV</span></div>
             </div>
 
-            <div class="input-wrapper">
+            <div class="toggle-group">
+                <button id="btn-single" class="toggle-btn active">Disparo único</button>
+                <button id="btn-rafaga" class="toggle-btn">Haz continuo</button>
+            </div>
+
+            <div id="wrapper-erate" class="input-wrapper" style="display:none">
                 <div class="label-container">
                     <label for="slider-erate">Frecuencia de disparo</label>
                     <span id="val-erate" class="value-badge">Media</span>
@@ -175,36 +184,6 @@
         </section>
 
         <hr class="divider">
-
-        <!-- MÉTRICAS EN TIEMPO REAL -->
-        <details class="custom-details" open>
-            <summary>Estado del átomo</summary>
-            <div class="details-content">
-                <div class="metrics-grid metrics-grid-2">
-                    <div class="card card-data">
-                        <h3>Nivel actual</h3>
-                        <div class="metric"><span id="metric-level">1</span><small></small></div>
-                    </div>
-                    <div class="card card-data">
-                        <h3>Energía (eV)</h3>
-                        <div class="metric"><span id="metric-energy">0.00</span><small> eV</small></div>
-                    </div>
-                </div>
-                <div class="metrics-grid metrics-grid-2">
-                    <div class="card card-data">
-                        <h3>Fotones absorbidos</h3>
-                        <div class="metric"><span id="metric-abs">0</span></div>
-                    </div>
-                    <div class="card card-data">
-                        <h3>Fotones emitidos</h3>
-                        <div class="metric"><span id="metric-emi">0</span></div>
-                    </div>
-                </div>
-                <div class="card card-estado">
-                    <span id="metric-state" class="estado-value">Estado fundamental</span>
-                </div>
-            </div>
-        </details>
 
         <!-- TRANSICIONES DEL ÁTOMO ACTUAL -->
         <details class="custom-details">
@@ -275,6 +254,6 @@
     </main>
 
 </div>
-<script src="js/sketch.js"></script>
+<script src="js/sketch.js?v=20260614l"></script>
 </body>
 </html>
