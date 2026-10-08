@@ -871,7 +871,12 @@ function tryAbsorbPhoton(ph) {
   // Buscar transición desde el nivel actual que coincida con la λ del fotón
   for (let tr of atomData.transitions) {
     if (tr.from !== electronLevel) continue;
-    let tolerance = 18; // nm
+    // Con luz monocromática solo se absorbe la longitud de onda justa: el
+    // deslizador va de 2 en 2 nm, así que basta 1 nm de margen para alcanzar
+    // también las líneas impares (589 nm del sodio). Con luz blanca el margen
+    // es mayor solo para que, de entre tantos fotones al azar, se absorban los
+    // suficientes y las rayas oscuras aparezcan en un tiempo de clase.
+    let tolerance = lightType === 'white' ? 18 : 2; // nm
     if (abs(ph.wl - tr.wl) < tolerance && tr.wl >= 380 && tr.wl <= 780) {
       // ¡Absorción!
       ph.fading = true;
