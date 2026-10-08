@@ -48,16 +48,16 @@ const ATOMS_DATA = {
   },
   sodio: {
     name: 'Sodio (Na)', symbol: 'Na',
-    note: 'La línea amarilla (589 nm) es la más intensa del espectro visible. Explica el color de las farolas de sodio.',
+    note: 'La línea amarilla (589 nm) es la más intensa del espectro visible. Explica el color de las farolas de sodio. Desde 3d el átomo no puede volver directamente a 3s (salto prohibido): baja por 3p.',
     nucleusColor: [255, 190, 50],
     orbitStroke: [200, 150, 30],
     levels: 3,
-    levelLabels: ['3s', '3p', '4d'],
+    levelLabels: ['3s', '3p', '3d'],
     energies: [0, 2.10, 3.62],
     radii: [68, 115, 155],
+    // 3s → 3d (Δl = 2) está prohibido: no hay línea de 343 nm
     transitions: [
       { from: 0, to: 1, wl: 589, visible: true,  name: 'D₁/D₂' },
-      { from: 0, to: 2, wl: 343, visible: false, name: 'UV' },
       { from: 1, to: 2, wl: 819, visible: false, name: 'IR' },
     ]
   },
@@ -207,7 +207,7 @@ class GasAtomEntity {
     let path = [];
     let current = startLevel;
     while (current > 0) {
-      let to = floor(random(current));  // aleatorio en [0, current-1]
+      let to = nivelInferiorAleatorio(current);
       path.push({ from: current, to });
       current = to;
     }
@@ -499,6 +499,14 @@ let gasPhotonCounts = {};
 let gasPhotonTotal  = 0;
 
 // ─── HELPERS ─────────────────────────────────────────────────────
+// Nivel al que baja el electrón desde `current`: uno inferior al azar, pero solo
+// entre los que tienen transición (en el sodio, desde 3d no se puede ir a 3s).
+function nivelInferiorAleatorio(current) {
+  let opciones = [];
+  for (let lv = 0; lv < current; lv++) if (findTransition(atomData, lv, current)) opciones.push(lv);
+  return opciones.length ? random(opciones) : floor(random(current));
+}
+
 function findTransition(atom, from, to) {
   return atom.transitions.find(
     t => (t.from === from && t.to === to) || (t.from === to && t.to === from)
@@ -538,7 +546,7 @@ function deExciteAtom() {
   atomCascade = [];
   let current = electronLevel;
   while (current > 0) {
-    let to = floor(random(current));  // aleatorio en [0, current-1]
+    let to = nivelInferiorAleatorio(current);
     atomCascade.push({ from: current, to });
     current = to;
   }
