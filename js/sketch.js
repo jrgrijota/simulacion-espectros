@@ -666,13 +666,15 @@ function setup() {
 function draw() {
   background(...CT.bg);
 
-  // Decaimiento del espectro
-  for (let i = 0; i < spectrumIntensity.length; i++) {
-    spectrumIntensity[i] *= SPECTRUM_DECAY;
-  }
-  for (let k in extSpectrumLines) {
-    extSpectrumLines[k] *= SPECTRUM_DECAY;
-    if (extSpectrumLines[k] < 0.01) delete extSpectrumLines[k];
+  // Decaimiento del espectro (en pausa se congela, como todo lo demás)
+  if (!isPaused) {
+    for (let i = 0; i < spectrumIntensity.length; i++) {
+      spectrumIntensity[i] *= SPECTRUM_DECAY;
+    }
+    for (let k in extSpectrumLines) {
+      extSpectrumLines[k] *= SPECTRUM_DECAY;
+      if (extSpectrumLines[k] < 0.01) delete extSpectrumLines[k];
+    }
   }
 
   if (isPaused) {
@@ -1697,8 +1699,9 @@ function setupControls() {
   });
   domSliderDensity.input(() => {
     gasDensity = int(domSliderDensity.value());
-    let labels = ['Muy diluid', 'Diluida', 'Media', 'Densa', 'Muy densa'];
-    let idx = floor(map(gasDensity, 4, 20, 0, 4));
+    // round: el valor inicial (10) cae en «Media», como dice la etiqueta al cargar
+    let labels = ['Muy diluida', 'Diluida', 'Media', 'Densa', 'Muy densa'];
+    let idx = round(map(gasDensity, 4, 20, 0, 4));
     domValDensity.html(labels[min(idx, 4)]);
     updateSliderFill(domSliderDensity);
     initGasMode();
