@@ -849,6 +849,11 @@ function updatePhotonMode() {
   diagElectronRY += (diagTargetY() - diagElectronRY) * 0.10;
 }
 
+// Números con coma decimal, como se escriben en clase.
+function fmt(x, d) {
+  return Number(x).toFixed(d).replace('.', ',');
+}
+
 function spawnIncomingPhoton() {
   let wl;
   if (lightType === 'white') {
@@ -1043,7 +1048,7 @@ function drawElectronGun() {
   textAlign(CENTER, CENTER);
   textSize(13);
   noStroke();
-  text(electronEnergy.toFixed(1) + ' eV', sx, sy - 50);
+  text(fmt(electronEnergy, 1) + ' eV', sx, sy - 50);
 }
 
 
@@ -1086,7 +1091,7 @@ function drawGasMode(animate) {
   textAlign(CENTER, TOP);
   textSize(13);
   noStroke();
-  text('Lámpara de ' + atomData.name + '   —   ' + gasVoltage.toFixed(1) + ' eV', CV_W / 2, TUBE_Y + 5);
+  text('Lámpara de ' + atomData.name + '   —   ' + fmt(gasVoltage, 1) + ' eV', CV_W / 2, TUBE_Y + 5);
 
   drawGasCounters();
 }
@@ -1177,7 +1182,7 @@ function drawAtom(cx, cy) {
     let ly = cy - r - 4;
     noStroke();
     textSize(11);
-    let eStr   = atom.energies[i].toFixed(2) + ' eV';
+    let eStr   = fmt(atom.energies[i], 2) + ' eV';
     let wLabel = textWidth(atom.levelLabels[i] + '  ');
     let wEnergy = textWidth(eStr);
     let xLeft  = lx - (wLabel + wEnergy) / 2;
@@ -1356,7 +1361,7 @@ function drawEnergyDiagram() {
     fill(...CT.diagEval, 140);
     textAlign(RIGHT, CENTER);
     textSize(11);
-    text(e.toFixed(2), x0 + 28, ly);
+    text(fmt(e, 2), x0 + 28, ly);
 
   }
 
@@ -1741,7 +1746,7 @@ function setupControls() {
   // Sliders de modo colisión
   domSliderEEnergy.input(() => {
     electronEnergy = parseFloat(domSliderEEnergy.value());
-    domValEEnergy.html(electronEnergy.toFixed(1) + ' eV');
+    domValEEnergy.html(fmt(electronEnergy, 1) + ' eV');
     updateSliderFill(domSliderEEnergy);
     updateEnergyAccessPanel();
   });
@@ -1755,7 +1760,7 @@ function setupControls() {
   // Sliders de modo gas
   domSliderVoltage.input(() => {
     gasVoltage = parseFloat(domSliderVoltage.value());
-    domValVoltage.html(gasVoltage.toFixed(1) + ' eV');
+    domValVoltage.html(fmt(gasVoltage, 1) + ' eV');
     updateSliderFill(domSliderVoltage);
     // Actualizar energía de electrones del gas
     for (let e of gasElectrons) {
@@ -1878,7 +1883,7 @@ function updateTransitionsList() {
 
 function updateEnergyAccessPanel() {
   if (!domEnergyAccessPanel) return;
-  let html = '<div style="font-size:8px;color:#607080;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Con ' + electronEnergy.toFixed(1) + ' eV puedes alcanzar:</div>';
+  let html = '<div style="font-size:8px;color:#607080;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Con ' + fmt(electronEnergy, 1) + ' eV puedes alcanzar:</div>';
   for (let lv = 1; lv < atomData.levels; lv++) {
     let needed = atomData.energies[lv] - atomData.energies[0];
     let canReach = electronEnergy >= needed;
@@ -1887,7 +1892,7 @@ function updateEnergyAccessPanel() {
     let check = canReach ? '<span class="energy-check yes">✓</span>' : '<span class="energy-check no">✗</span>';
     html += `<div class="energy-row">
       <div class="energy-dot" style="background:${dotColor}"></div>
-      <span class="energy-label">${atomData.levelLabels[lv]} (${needed.toFixed(2)} eV)</span>
+      <span class="energy-label">${atomData.levelLabels[lv]} (${fmt(needed, 2)} eV)</span>
       ${check}
     </div>`;
   }
@@ -1897,18 +1902,18 @@ function updateEnergyAccessPanel() {
 function updateUI() {
   if (!domMetricLevel) return;
   domMetricLevel.html(atomData.levelLabels[electronLevel]);
-  domMetricEnergy.html(atomData.energies[electronLevel].toFixed(2));
+  domMetricEnergy.html(fmt(atomData.energies[electronLevel], 2));
   domMetricAbs.html(absCount);
   domMetricEmi.html(emiCount);
   let stateText = electronLevel === 0 ? (atomData.baseLabel || 'Estado fundamental') :
-    'Excitado — ' + atomData.levelLabels[electronLevel] + ' (' + atomData.energies[electronLevel].toFixed(2) + ' eV)';
+    'Excitado — ' + atomData.levelLabels[electronLevel] + ' (' + fmt(atomData.energies[electronLevel], 2) + ' eV)';
   domMetricState.html(stateText);
 
   // Estado del gas
   if (currentMode === 'gas') {
     let excited = gasAtomsList.filter(a => a.level > 0).length;
     domMetricLevel.html(excited + '/' + gasAtomsList.length);
-    domMetricEnergy.html(gasVoltage.toFixed(1));
+    domMetricEnergy.html(fmt(gasVoltage, 1));
     domMetricState.html(excited > 0 ? excited + ' átomos excitados' : 'Todos en reposo');
   }
 }
