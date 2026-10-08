@@ -14,12 +14,13 @@
 const ATOMS_DATA = {
   hidrogeno: {
     name: 'Hidrógeno (H)', symbol: 'H',
-    note: 'Modelo simplificado (4 niveles). Las líneas visibles H-α 656 nm, H-β 486 nm y H-γ 434 nm corresponden a la serie de Balmer.',
+    note: 'Modelo simplificado: solo los niveles n=2 a n=5 (el fundamental, n=1, queda fuera). Las líneas visibles H-α 656 nm, H-β 486 nm y H-γ 434 nm son la serie de Balmer: saltos que acaban en n=2.',
     nucleusColor: [180, 210, 255],
     orbitStroke: [100, 140, 220],
     levels: 4,
-    levelLabels: ['n=1', 'n=2', 'n=3', 'n=4'],
-    energies: [0, 1.89, 2.55, 2.86],
+    levelLabels: ['n=2', 'n=3', 'n=4', 'n=5'],
+    baseLabel: 'Nivel n=2 (el más bajo del modelo)',   // el fundamental es n=1
+    energies: [0, 1.89, 2.55, 2.86],                  // respecto a n=2
     radii: [68, 108, 140, 168],
     transitions: [
       { from: 0, to: 1, wl: 656, visible: true,  name: 'H-α' },
@@ -1823,7 +1824,7 @@ function updateUI() {
   domMetricEnergy.html(atomData.energies[electronLevel].toFixed(2));
   domMetricAbs.html(absCount);
   domMetricEmi.html(emiCount);
-  let stateText = electronLevel === 0 ? 'Estado fundamental' :
+  let stateText = electronLevel === 0 ? (atomData.baseLabel || 'Estado fundamental') :
     'Excitado — ' + atomData.levelLabels[electronLevel] + ' (' + atomData.energies[electronLevel].toFixed(2) + ' eV)';
   domMetricState.html(stateText);
 
