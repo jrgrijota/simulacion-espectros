@@ -359,6 +359,8 @@ let gasElectronT  = 0;
 
 // Espectro (índice 0 = 380nm, índice 400 = 780nm)
 let spectrumIntensity = new Float32Array(401);
+// Rayas oscuras del espectro de absorción (modo fotones): λ que el átomo ha absorbido
+let absorptionIntensity = new Float32Array(401);
 const SPECTRUM_DECAY  = 0.9992;
 
 // DOM
@@ -401,6 +403,7 @@ let diagElectronRY = 0;
 
 // Buffers pre-renderizados para los fondos de espectro (evitan 1200+ rects/frame)
 let spectrumBgGfx = null;
+let absorptionBgGfx = null;   // arcoíris brillante: la luz blanca que atraviesa el gas
 let extSpecBgGfx  = null;
 
 // ─── HELPERS DIAGRAMA DE NIVELES ────────────────────────────────
@@ -522,6 +525,15 @@ function updateSpectrum(wl) {
   if (idx < 400) spectrumIntensity[idx + 1] = min(1.0, spectrumIntensity[idx + 1] + 0.25);
 }
 
+// Raya oscura en el espectro de absorción, con el mismo ensanchamiento que las de emisión
+function updateAbsorptionSpectrum(wl) {
+  if (wl < 380 || wl > 780) return;
+  let idx = Math.round(wl - 380);
+  absorptionIntensity[idx] = min(1.0, absorptionIntensity[idx] + 0.6);
+  if (idx > 0)   absorptionIntensity[idx - 1] = min(1.0, absorptionIntensity[idx - 1] + 0.25);
+  if (idx < 400) absorptionIntensity[idx + 1] = min(1.0, absorptionIntensity[idx + 1] + 0.25);
+}
+
 function emitPhotonFromAtom(wl) {
   let angle = random(TWO_PI);
   let speed = random(3, 5);
@@ -597,6 +609,7 @@ function resetSim() {
   if (atomData) diagElectronRY = diagTargetY();
   initGasMode();
   spectrumIntensity.fill(0);
+  absorptionIntensity.fill(0);
   extSpectrumLines = {};
   updateUI();
 }
@@ -627,6 +640,16 @@ function buildStaticBuffers() {
     let px = map(i, 0, 400, 2, sw - 2);
     spectrumBgGfx.fill(r, g, b, 18);
     spectrumBgGfx.rect(px, 2, colW, SPEC_H - 4);
+  }
+
+  // Arcoíris brillante para el espectro de absorción (mitad superior de la franja)
+  absorptionBgGfx = createGraphics(sw, SPEC_H / 2);
+  absorptionBgGfx.noStroke();
+  for (let i = 0; i <= 400; i++) {
+    let [r, g, b] = wlToRGB(380 + i);
+    let px = map(i, 0, 400, 2, sw - 2);
+    absorptionBgGfx.fill(r, g, b, 200);
+    absorptionBgGfx.rect(px, 0, colW + 0.5, SPEC_H / 2);
   }
 
   // Degradados UV/IR del espectro extendido
@@ -669,7 +692,8 @@ function draw() {
   // Decaimiento del espectro (en pausa se congela, como todo lo demás)
   if (!isPaused) {
     for (let i = 0; i < spectrumIntensity.length; i++) {
-      spectrumIntensity[i] *= SPECTRUM_DECAY;
+      spectrumIntensity[i]   *= SPECTRUM_DECAY;
+      absorptionIntensity[i] *= SPECTRUM_DECAY;
     }
     for (let k in extSpectrumLines) {
       extSpectrumLines[k] *= SPECTRUM_DECAY;
@@ -851,6 +875,7 @@ function tryAbsorbPhoton(ph) {
     if (abs(ph.wl - tr.wl) < tolerance && tr.wl >= 380 && tr.wl <= 780) {
       // ¡Absorción!
       ph.fading = true;
+      updateAbsorptionSpectrum(tr.wl);
       electronLevel = tr.to;
       exciteTimer = floor(random(80, 160));
       flashTimer  = 25;
@@ -1463,6 +1488,30 @@ function drawSpectrum() {
   // Gradiente de fondo pre-renderizado (arcoíris tenue)
   if (spectrumBgGfx) image(spectrumBgGfx, x1, y);
 
+  // En el modo fotones la franja se parte en dos sobre el mismo eje de λ:
+  // arriba el espectro de absorción (la luz que atraviesa, con rayas oscuras)
+  // y abajo el de emisión. Así se ve que las rayas coinciden.
+  let split = currentMode === 'fotones';
+  let yEm   = split ? y + h / 2 : y + 2;          // zona de las líneas de emisión
+  let hEm   = split ? h / 2 - 2 : h - 4;
+
+  if (split) {
+    let hAb = h / 2 - 2;
+    if (absorptionBgGfx) image(absorptionBgGfx, x1, y + 2, w, hAb, 0, 0, w, hAb);
+    noStroke();
+    for (let i = 0; i <= 400; i++) {
+      let intensity = absorptionIntensity[i];
+      if (intensity < 0.01) continue;
+      let px = map(i, 0, 400, x1 + 2, x2 - 2);
+      fill(8, 10, 14, intensity * 255);   // negro también con el tema claro
+      rect(px - 1.2, y + 2, 2.4, hAb);
+    }
+    stroke(...CT.specBord, 160);
+    strokeWeight(1);
+    line(x1, y + h / 2, x2, y + h / 2);
+    noStroke();
+  }
+
   // Líneas de emisión
   for (let i = 0; i <= 400; i++) {
     let intensity = spectrumIntensity[i];
@@ -1472,10 +1521,10 @@ function drawSpectrum() {
     let px = map(i, 0, 400, x1 + 2, x2 - 2);
     // Halo
     fill(r, g, b, intensity * 60);
-    rect(px - 1.5, y + 2, 3, h - 4);
+    rect(px - 1.5, yEm, 3, hEm);
     // Línea central
     fill(r, g, b, intensity * 240);
-    rect(px - 0.7, y + 2, 1.4, h - 4);
+    rect(px - 0.7, yEm, 1.4, hEm);
   }
 
   // Marcadores de longitud de onda
@@ -1493,11 +1542,22 @@ function drawSpectrum() {
   }
 
   // Título
-  fill(...CT.specTitle, 160);
   noStroke();
   textAlign(LEFT, TOP);
   textSize(12);
-  text('Espectro de emisión   (nm)', x1 + 6, y + 4);
+  if (split) {
+    // Rótulo de absorción sobre un fondo oscuro para que se lea sobre el arcoíris
+    let lbl = 'Espectro de absorción';
+    fill(...CT.specBg, 200);
+    rect(x1 + 3, y + 3, textWidth(lbl) + 8, 16, 3);
+    fill(...CT.specTitle, 220);
+    text(lbl, x1 + 7, y + 5);
+    fill(...CT.specTitle, 160);
+    text('Espectro de emisión   (nm)', x1 + 6, y + h / 2 + 3);
+  } else {
+    fill(...CT.specTitle, 160);
+    text('Espectro de emisión   (nm)', x1 + 6, y + 4);
+  }
 }
 
 // ─── ESPECTRO EXTENDIDO UV/IR ────────────────────────────────────
