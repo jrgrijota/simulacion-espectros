@@ -1369,6 +1369,14 @@ function drawEnergyDiagram() {
     textAlign(LEFT, CENTER);
     textSize(11);
     text(atom.levelLabels[i], x0 + 32, ly - 8);
+    // En el hidrógeno el nivel de abajo es n = 2, no el fundamental (n = 1):
+    // se dice en el propio diagrama para no confundirlos.
+    if (i === 0 && atom.symbol === 'H') {
+      fill(...CT.diagEval, 170);
+      textSize(9.5);
+      textAlign(LEFT, TOP);
+      text('Nivel más bajo de este modelo. El fundamental (n=1) no se muestra.', x0 + 32, ly + 8, w - 44);
+    }
 
     // Valor de energía
     fill(...CT.diagEval, 140);
