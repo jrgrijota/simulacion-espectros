@@ -675,6 +675,19 @@ function buildStaticBuffers() {
 function setup() {
   let canvas = createCanvas(CV_W, CV_H);
   canvas.parent('canvas-container');
+  // El lienzo se escala para llenar su hueco sin deformarse: en un monitor o
+  // un proyector grande el diagrama y los espectros se ven más grandes.
+  const holder = document.getElementById('canvas-container');
+  const fitCanvas = () => {
+    const cs = getComputedStyle(holder);
+    const w = holder.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+    const h = holder.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const k = Math.max(0.1, Math.min(w / CV_W, h / CV_H));
+    canvas.elt.style.width = (CV_W * k) + 'px';
+    canvas.elt.style.height = (CV_H * k) + 'px';
+  };
+  fitCanvas();
+  if (window.ResizeObserver) new ResizeObserver(fitCanvas).observe(holder);
   frameRate(60);
   textFont('monospace');
   atomData = ATOMS_DATA[currentAtomKey];
@@ -1424,9 +1437,9 @@ function drawEnergyDiagram() {
     // Etiqueta λ
     fill(col[0], col[1], col[2], tr.visible ? 180 : 60);
     textAlign(LEFT, CENTER);
-    textSize(7.5);
+    textSize(10);
     let ly = (y1 + y2) / 2;
-    let lbl = tr.visible ? tr.wl + 'nm' : (tr.wl < 380 ? 'UV' : 'IR');
+    let lbl = tr.visible ? tr.wl + ' nm' : (tr.wl < 380 ? 'UV' : 'IR');
     text(lbl, tx + 4, ly);
   }
 }
