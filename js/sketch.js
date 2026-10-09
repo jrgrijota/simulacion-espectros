@@ -1381,7 +1381,7 @@ function drawEnergyDiagram() {
   // Electrón animado en el diagrama (posición interpolada)
   let targY   = diagTargetY();
   let distY   = abs(diagElectronRY - targY);
-  let eX      = x0 + 22;
+  let eX      = x0 + 40;   // sobre la línea del nivel, sin tapar la energía del eje
 
   noStroke();
   if (distY > 3) {
