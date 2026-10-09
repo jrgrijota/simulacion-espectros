@@ -361,7 +361,7 @@ let gasElectronT  = 0;
 let spectrumIntensity = new Float32Array(401);
 // Rayas oscuras del espectro de absorción (modo fotones): λ que el átomo ha absorbido
 let absorptionIntensity = new Float32Array(401);
-const SPECTRUM_DECAY  = 0.9992;
+const SPECTRUM_DECAY  = 0.99985;   // las líneas tardan ~77 s en perder la mitad de su brillo
 
 // DOM
 let domAtomSelect, domBtnBlanca, domBtnMono, domSliderWl, domValWl;
