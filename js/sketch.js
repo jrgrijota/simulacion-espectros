@@ -575,7 +575,7 @@ function updateAtomCascade() {
   let tr = findTransition(atomData, step.to, step.from);
   if (tr) {
     emitPhotonFromAtom(tr.wl);
-    stateLbl    = `EMITE  ${tr.wl} nm    (${atomData.levelLabels[tr.to]} → ${atomData.levelLabels[tr.from]})`;
+    stateLbl    = i18n.t('EMITE  {wl} nm    ({de} → {a})', { wl: tr.wl, de: atomData.levelLabels[tr.to], a: atomData.levelLabels[tr.from] });
     stateLblClr = wlToRGB(tr.wl);
     stateLblT   = 120;
     activeTr    = tr;
@@ -745,7 +745,7 @@ function drawPausedOverlay() {
   fill(...CT.pauseTxt, 200);
   textAlign(CENTER, CENTER);
   textSize(18);
-  text('PAUSA', CV_W / 2, CV_H / 2 - SPEC_H / 2);
+  text(i18n.t('PAUSA'), CV_W / 2, CV_H / 2 - SPEC_H / 2);
 }
 
 // ─── MODO FOTONES ────────────────────────────────────────────────
@@ -764,9 +764,9 @@ function drawPhotonMode(animate) {
   textAlign(CENTER, TOP);
   textSize(13);
   noStroke();
-  text(lightType === 'white' ? 'Luz blanca' : monoWl + ' nm', 65, 20);
+  text(lightType === 'white' ? i18n.t('Luz blanca') : monoWl + ' nm', 65, 20);
 
-  if (fotoSingleShot) drawSourceFireHint('fotón');
+  if (fotoSingleShot) drawSourceFireHint('para disparar un fotón');
 }
 
 // Banner + resalte de la fuente para el modo "disparo único".
@@ -781,8 +781,8 @@ function drawSourceFireHint(what) {
   rect(10, sy - 56, 60, 112, 12);
 
   // Banner de texto en 2 líneas, debajo de la fuente
-  let ln1 = '⚡ Haz clic en la fuente';
-  let ln2 = 'para disparar un ' + what;
+  let ln1 = i18n.t('⚡ Haz clic en la fuente');
+  let ln2 = i18n.t(what);
   textSize(11);
   let pad = 7, lineH = 15;
   let tw = max(textWidth(ln1), textWidth(ln2)) + pad * 2;
@@ -864,7 +864,7 @@ function updatePhotonMode() {
 
 // Números con coma decimal, como se escriben en clase.
 function fmt(x, d) {
-  return Number(x).toFixed(d).replace('.', ',');
+  return i18n.num(x, d);
 }
 
 function spawnIncomingPhoton() {
@@ -903,7 +903,7 @@ function tryAbsorbPhoton(ph) {
       exciteTimer = floor(random(80, 160));
       flashTimer  = 25;
       absCount++;
-      stateLbl    = `ABSORBE  ${tr.wl} nm    (${atomData.levelLabels[tr.from]} → ${atomData.levelLabels[tr.to]})`;
+      stateLbl    = i18n.t('ABSORBE  {wl} nm    ({de} → {a})', { wl: tr.wl, de: atomData.levelLabels[tr.from], a: atomData.levelLabels[tr.to] });
       stateLblClr = wlToRGB(tr.wl);
       stateLblT   = 120;
       activeTr    = tr;
@@ -957,7 +957,7 @@ function drawCollisionMode(animate) {
   for (let ph of outPhotons)    ph.draw();
   drawAtomStateLabel();
 
-  if (collSingleShot) drawSourceFireHint('electrón');
+  if (collSingleShot) drawSourceFireHint('para disparar un electrón');
 }
 
 function updateCollisionMode() {
@@ -1019,14 +1019,14 @@ function tryCollisionExcite(electron) {
     absCount++;
     electron.collided = true;
     electron.vx *= -0.6;
-    stateLbl    = `EXCITACIÓN  (${atomData.levelLabels[prevLevel]} → ${atomData.levelLabels[bestTarget]})`;
+    stateLbl    = i18n.t('EXCITACIÓN  ({de} → {a})', { de: atomData.levelLabels[prevLevel], a: atomData.levelLabels[bestTarget] });
     stateLblClr = [80, 210, 255];
     stateLblT   = 120;
     let tr = findTransition(atomData, prevLevel, bestTarget);
     if (tr) { activeTr = tr; activeTrT = 120; }
   } else {
     electron.collided = true;
-    stateLbl    = 'Colisión elástica — energía insuficiente';
+    stateLbl    = i18n.t('Colisión elástica — energía insuficiente');
     stateLblClr = [150, 150, 150];
     stateLblT   = 90;
   }
@@ -1092,8 +1092,8 @@ function drawGasMode(animate) {
   textAlign(CENTER, BOTTOM);
   textSize(11);
   noStroke();
-  text('Cátodo (−)', TUBE_X + 9, TUBE_Y - 3);
-  text('Ánodo (+)', TUBE_X + TUBE_W - 9, TUBE_Y - 3);
+  text(i18n.t('Cátodo (−)'), TUBE_X + 9, TUBE_Y - 3);
+  text(i18n.t('Ánodo (+)'), TUBE_X + TUBE_W - 9, TUBE_Y - 3);
 
   for (let ga of gasAtomsList) ga.draw();
   for (let ge of gasElectrons) ge.draw();
@@ -1104,7 +1104,7 @@ function drawGasMode(animate) {
   textAlign(CENTER, TOP);
   textSize(13);
   noStroke();
-  text('Lámpara de ' + atomData.name + '   —   ' + fmt(gasVoltage, 1) + ' eV', CV_W / 2, TUBE_Y + 5);
+  text(i18n.t('Lámpara de {nombre}', { nombre: i18n.t(atomData.name) }) + '   —   ' + fmt(gasVoltage, 1) + ' eV', CV_W / 2, TUBE_Y + 5);
 
   drawGasCounters();
 }
@@ -1239,7 +1239,7 @@ function drawAtom(cx, cy) {
 
   // Indicador de excitación
   if (electronLevel > 0) {
-    let txt = '— excitado —';
+    let txt = i18n.t('— excitado —');
     fill(...CT.exciteTxt, 160);
     textAlign(CENTER, BOTTOM);
     textSize(12);
@@ -1337,7 +1337,7 @@ function drawEnergyDiagram() {
   noStroke();
   textAlign(CENTER, TOP);
   textSize(12);
-  text('Diagrama de niveles', x0 + w / 2, y0 + 6);
+  text(i18n.t('Diagrama de niveles'), x0 + w / 2, y0 + 6);
   textSize(11);
   fill(...CT.txtMid, 130);
   text('(eV)', x0 + 18, y0 + 18);
@@ -1375,7 +1375,7 @@ function drawEnergyDiagram() {
       fill(...CT.diagEval, 170);
       textSize(9.5);
       textAlign(LEFT, TOP);
-      text('Nivel más bajo de este modelo. El fundamental (n=1) no se muestra.', x0 + 32, ly + 8, w - 44);
+      text(i18n.t('Nivel más bajo de este modelo. El fundamental (n=1) no se muestra.'), x0 + 32, ly + 8, w - 44);
     }
 
     // Valor de energía
@@ -1483,9 +1483,8 @@ function drawGasCounters() {
   textAlign(LEFT, BOTTOM);
   textSize(12);
   text(
-    'e⁻ libres: ' + freeE +
-    '   ·   átomos excitados: ' + excitedN + ' / ' + gasAtomsList.length +
-    '   ·   fotones emitidos: ' + gasPhotonTotal,
+    i18n.t('e⁻ libres: {e}   ·   átomos excitados: {x} / {n}   ·   fotones emitidos: {f}',
+      { e: freeE, x: excitedN, n: gasAtomsList.length, f: gasPhotonTotal }),
     TUBE_X + 12, TUBE_Y + TUBE_H - 7
   );
 
@@ -1578,16 +1577,16 @@ function drawSpectrum() {
   textSize(12);
   if (split) {
     // Rótulo de absorción sobre un fondo oscuro para que se lea sobre el arcoíris
-    let lbl = 'Espectro de absorción';
+    let lbl = i18n.t('Espectro de absorción');
     fill(...CT.specBg, 200);
     rect(x1 + 3, y + 3, textWidth(lbl) + 8, 16, 3);
     fill(...CT.specTitle, 220);
     text(lbl, x1 + 7, y + 5);
     fill(...CT.specTitle, 160);
-    text('Espectro de emisión   (nm)', x1 + 6, y + h / 2 + 3);
+    text(i18n.t('Espectro de emisión   (nm)'), x1 + 6, y + h / 2 + 3);
   } else {
     fill(...CT.specTitle, 160);
-    text('Espectro de emisión   (nm)', x1 + 6, y + 4);
+    text(i18n.t('Espectro de emisión   (nm)'), x1 + 6, y + 4);
   }
 }
 
@@ -1760,7 +1759,7 @@ function setupControls() {
   domSliderRate.input(() => {
     photonRate = int(domSliderRate.value());
     let labels = ['Lento', 'Pausado', 'Medio', 'Rápido', 'Máximo'];
-    domValRate.html(labels[photonRate - 1]);
+    domValRate.html(i18n.t(labels[photonRate - 1]));
     updateSliderFill(domSliderRate);
   });
 
@@ -1774,7 +1773,7 @@ function setupControls() {
   domSliderERate.input(() => {
     electronRate = int(domSliderERate.value());
     let labels = ['Lenta', 'Pausada', 'Media', 'Rápida', 'Máxima'];
-    domValERate.html(labels[electronRate - 1]);
+    domValERate.html(i18n.t(labels[electronRate - 1]));
     updateSliderFill(domSliderERate);
   });
 
@@ -1793,7 +1792,7 @@ function setupControls() {
     // round: el valor inicial (10) cae en «Media», como dice la etiqueta al cargar
     let labels = ['Muy diluida', 'Diluida', 'Media', 'Densa', 'Muy densa'];
     let idx = round(map(gasDensity, 4, 20, 0, 4));
-    domValDensity.html(labels[min(idx, 4)]);
+    domValDensity.html(i18n.t(labels[min(idx, 4)]));
     updateSliderFill(domSliderDensity);
     initGasMode();
   });
@@ -1802,10 +1801,10 @@ function setupControls() {
   domBtnPause.mousePressed(() => {
     isPaused = !isPaused;
     if (isPaused) {
-      domBtnPause.html('▶ Continuar');
+      domBtnPause.html(i18n.t('▶ Continuar'));
       domBtnPause.addClass('paused');
     } else {
-      domBtnPause.html('⏸ Pausar');
+      domBtnPause.html(i18n.t('⏸ Pausar'));
       domBtnPause.removeClass('paused');
     }
   });
@@ -1904,7 +1903,7 @@ function updateTransitionsList() {
 
 function updateEnergyAccessPanel() {
   if (!domEnergyAccessPanel) return;
-  let html = '<div style="font-size:8px;color:#607080;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Con ' + fmt(electronEnergy, 1) + ' eV puedes alcanzar:</div>';
+  let html = '<div style="font-size:8px;color:#607080;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">' + i18n.t('Con {e} eV puedes alcanzar:', { e: fmt(electronEnergy, 1) }) + '</div>';
   for (let lv = 1; lv < atomData.levels; lv++) {
     let needed = atomData.energies[lv] - atomData.energies[0];
     let canReach = electronEnergy >= needed;
@@ -1926,8 +1925,8 @@ function updateUI() {
   domMetricEnergy.html(fmt(atomData.energies[electronLevel], 2));
   domMetricAbs.html(absCount);
   domMetricEmi.html(emiCount);
-  let stateText = electronLevel === 0 ? (atomData.baseLabel || 'Estado fundamental') :
-    'Excitado — ' + atomData.levelLabels[electronLevel] + ' (' + fmt(atomData.energies[electronLevel], 2) + ' eV)';
+  let stateText = electronLevel === 0 ? i18n.t(atomData.baseLabel || 'Estado fundamental') :
+    i18n.t('Excitado — {nivel} ({e} eV)', { nivel: atomData.levelLabels[electronLevel], e: fmt(atomData.energies[electronLevel], 2) });
   domMetricState.html(stateText);
 
   // Estado del gas
@@ -1935,7 +1934,7 @@ function updateUI() {
     let excited = gasAtomsList.filter(a => a.level > 0).length;
     domMetricLevel.html(excited + '/' + gasAtomsList.length);
     domMetricEnergy.html(fmt(gasVoltage, 1));
-    domMetricState.html(excited > 0 ? excited + ' átomos excitados' : 'Todos en reposo');
+    domMetricState.html(excited > 0 ? i18n.t('{x} átomos excitados', { x: excited }) : i18n.t('Todos en reposo'));
   }
 }
 
