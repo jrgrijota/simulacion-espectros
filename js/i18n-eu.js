@@ -120,5 +120,7 @@ window.I18N_EU = {
   'Estado fundamental': 'Oinarrizko egoera',
   'Excitado — {nivel} ({e} eV)': 'Kitzikatua — {nivel} ({e} eV)',
   '{x} átomos excitados': '{x} atomo kitzikatu',
-  'Todos en reposo': 'Guztiak oinarrizko egoeran'
+  'Todos en reposo': 'Guztiak oinarrizko egoeran',
+  // Sello de la zona de simulación (js/sello.js)
+  'Más simulaciones en simulaciencia.es': 'Simulazio gehiago simulaciencia.es webgunean'
 };

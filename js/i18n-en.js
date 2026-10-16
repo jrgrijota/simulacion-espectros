@@ -120,5 +120,7 @@ window.I18N_EN = {
   'Estado fundamental': 'Ground state',
   'Excitado — {nivel} ({e} eV)': 'Excited — {nivel} ({e} eV)',
   '{x} átomos excitados': '{x} excited atoms',
-  'Todos en reposo': 'All in ground state'
+  'Todos en reposo': 'All in ground state',
+  // Sello de la zona de simulación (js/sello.js)
+  'Más simulaciones en simulaciencia.es': 'More simulations at simulaciencia.es'
 };
