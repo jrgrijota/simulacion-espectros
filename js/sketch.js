@@ -1728,18 +1728,18 @@ function setupControls() {
   });
 
   // Modos
-  domModeFotones.mousePressed(() => switchMode('fotones'));
-  domModeColision.mousePressed(() => switchMode('colision'));
-  domModeGas.mousePressed(() => switchMode('gas'));
+  domModeFotones.mouseClicked(() => switchMode('fotones'));
+  domModeColision.mouseClicked(() => switchMode('colision'));
+  domModeGas.mouseClicked(() => switchMode('gas'));
 
   // Fuente de luz
-  domBtnBlanca.mousePressed(() => {
+  domBtnBlanca.mouseClicked(() => {
     lightType = 'white';
     domBtnBlanca.addClass('active');
     domBtnMono.removeClass('active');
     domMonoWrapper.style('display', 'none');
   });
-  domBtnMono.mousePressed(() => {
+  domBtnMono.mouseClicked(() => {
     lightType = 'mono';
     domBtnMono.addClass('active');
     domBtnBlanca.removeClass('active');
@@ -1798,7 +1798,7 @@ function setupControls() {
   });
 
   // Pausa / reset
-  domBtnPause.mousePressed(() => {
+  domBtnPause.mouseClicked(() => {
     isPaused = !isPaused;
     if (isPaused) {
       domBtnPause.html(i18n.t('▶ Continuar'));
@@ -1808,21 +1808,21 @@ function setupControls() {
       domBtnPause.removeClass('paused');
     }
   });
-  domBtnReset.mousePressed(() => {
+  domBtnReset.mouseClicked(() => {
     resetSim();
     if (currentMode === 'gas') initGasMode();
   });
 
   // Disparo único / Ráfaga (modo colisión) — en disparo único se dispara
   // haciendo clic en la fuente del lienzo (ver mousePressed / drawSourceFireHint)
-  if (domBtnRafaga) domBtnRafaga.mousePressed(() => {
+  if (domBtnRafaga) domBtnRafaga.mouseClicked(() => {
     collSingleShot = false;
     domBtnRafaga.addClass('active');
     domBtnSingle.removeClass('active');
     if (domWrapperERate) domWrapperERate.style('display', 'flex');
     resetSim();
   });
-  if (domBtnSingle) domBtnSingle.mousePressed(() => {
+  if (domBtnSingle) domBtnSingle.mouseClicked(() => {
     collSingleShot = true;
     domBtnSingle.addClass('active');
     domBtnRafaga.removeClass('active');
@@ -1831,14 +1831,14 @@ function setupControls() {
   });
 
   // Disparo único / Ráfaga (modo fotones)
-  if (domBtnFotoRafaga) domBtnFotoRafaga.mousePressed(() => {
+  if (domBtnFotoRafaga) domBtnFotoRafaga.mouseClicked(() => {
     fotoSingleShot = false;
     domBtnFotoRafaga.addClass('active');
     domBtnFotoSingle.removeClass('active');
     if (domWrapperFRate) domWrapperFRate.style('display', 'flex');
     resetSim();
   });
-  if (domBtnFotoSingle) domBtnFotoSingle.mousePressed(() => {
+  if (domBtnFotoSingle) domBtnFotoSingle.mouseClicked(() => {
     fotoSingleShot = true;
     domBtnFotoSingle.addClass('active');
     domBtnFotoRafaga.removeClass('active');
@@ -1894,7 +1894,7 @@ function updateTransitionsList() {
         &nbsp;·&nbsp;
         <span class="tr-type">${typeLabel}</span>
         &nbsp;·&nbsp;
-        <span style="color:#666">${atomData.levelLabels[tr.from]}→${atomData.levelLabels[tr.to]}</span>
+        <span class="tr-levels">${atomData.levelLabels[tr.from]}→${atomData.levelLabels[tr.to]}</span>
       </div>
     </div>`;
   }
@@ -1903,7 +1903,7 @@ function updateTransitionsList() {
 
 function updateEnergyAccessPanel() {
   if (!domEnergyAccessPanel) return;
-  let html = '<div style="font-size:8px;color:#607080;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">' + i18n.t('Con {e} eV puedes alcanzar:', { e: fmt(electronEnergy, 1) }) + '</div>';
+  let html = '<div class="energy-access-title" style="font-size:8px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">' + i18n.t('Con {e} eV puedes alcanzar:', { e: fmt(electronEnergy, 1) }) + '</div>';
   for (let lv = 1; lv < atomData.levels; lv++) {
     let needed = atomData.energies[lv] - atomData.energies[0];
     let canReach = electronEnergy >= needed;
