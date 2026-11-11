@@ -696,6 +696,20 @@ function setup() {
   setupControls();
   updateAtomDisplay();
   initGasMode();
+
+  // Ajustes de la dirección (fichas del alumnado): ver js/parametros.js.
+  aplicarParametrosUrl({
+    modo:      urlParam.click({ fotones: 'mode-fotones', colision: 'mode-colision', 'colisión': 'mode-colision', gas: 'mode-gas' }),
+    elemento:  urlParam.select('atom-select'),
+    luz:       urlParam.click({ blanca: 'btn-blanca', mono: 'btn-mono', monocromatica: 'btn-mono', 'monocromática': 'btn-mono' }),
+    onda:      urlParam.range('slider-wl'),
+    fotones:   urlParam.click({ uno: 'btn-foto-single', continua: 'btn-foto-rafaga' }),
+    flujo:     urlParam.range('slider-rate'),
+    energia:   urlParam.range('slider-eenergy'),
+    disparo:   urlParam.click({ uno: 'btn-single', continuo: 'btn-rafaga' }),
+    voltaje:   urlParam.range('slider-voltage'),
+    densidad:  urlParam.range('slider-density'),
+  });
 }
 
 // ─── P5.JS DRAW ─────────────────────────────────────────────────
