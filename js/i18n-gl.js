@@ -2,8 +2,8 @@
 window.I18N_GL = {
   // Cabecera y descripción
   'Espectros Atómicos — Simulación Interactiva': 'Espectros Atómicos — Simulación Interactiva',
-  'Espectros Atómicos': 'Espectros Atómicos',
-  'Absorción, Emisión y Niveles de Energía': 'Absorción, Emisión e Niveis de Enerxía',
+  'Espectros atómicos': 'Espectros atómicos',
+  'Absorción, emisión y niveles de energía': 'Absorción, emisión e niveis de enerxía',
   'Descripción y conceptos clave': 'Descrición e conceptos clave',
   'desc-intro': 'Os átomos só poden absorber ou emitir fotóns de enerxías moi concretas, que coinciden cos saltos entre os seus niveis de enerxía. Isto orixina espectros únicos, como unha "pegada dactilar" de cada elemento.',
   'Absorción: fotón in → electrón sube ↑': 'Absorción: fotón in → o electrón sobe ↑',
@@ -15,7 +15,7 @@ window.I18N_GL = {
   'absorción / emisión': 'absorción / emisión',
   'Colisión': 'Colisión',
   'bombardeo electrónico': 'bombardeo electrónico',
-  'Gas Ionizado': 'Gas Ionizado',
+  'Gas ionizado': 'Gas ionizado',
   'lámpara de gas': 'lámpada de gas',
 
   // Selector de átomo
@@ -31,7 +31,7 @@ window.I18N_GL = {
   'Neón (Ne)': 'Neon (Ne)',
 
   // Modo fotones
-  'Fuente de Luz': 'Fonte de Luz',
+  'Fuente de luz': 'Fonte de luz',
   'Luz blanca': 'Luz branca',
   'Monocromática': 'Monocromática',
   'Longitud de onda': 'Lonxitude de onda',
@@ -47,7 +47,7 @@ window.I18N_GL = {
   'Máximo': 'Máximo',
 
   // Modo colisión
-  'Cañón de Electrones': 'Canón de Electróns',
+  'Cañón de electrones': 'Canón de electróns',
   'Energía del electrón': 'Enerxía do electrón',
   '3,0 eV': '3,0 eV',
   '0,5 eV': '0,5 eV',
@@ -63,7 +63,7 @@ window.I18N_GL = {
   'Con {e} eV puedes alcanzar:': 'Con {e} eV podes chegar a:',
 
   // Modo gas
-  'Lámpara de Gas': 'Lámpada de Gas',
+  'Lámpara de gas': 'Lámpada de gas',
   'Voltaje del tubo': 'Voltaxe do tubo',
   '5,0 eV': '5,0 eV',
   'Densidad del gas': 'Densidade do gas',
@@ -122,5 +122,29 @@ window.I18N_GL = {
   '{x} átomos excitados': '{x} átomos excitados',
   'Todos en reposo': 'Todos en repouso',
   // Sello de la zona de simulación (js/sello.js)
-  'Más simulaciones en simulaciencia.es': 'Máis simulacións en simulaciencia.es'
+  'Más simulaciones en simulaciencia.es': 'Máis simulacións en simulaciencia.es',
+  // Estilo juego: mascota, bocadillo y rótulos del lienzo
+  'En pausa': 'En pausa',
+  'no se ve': 'non se ve',
+  'Espectro de emisión': 'Espectro de emisión',
+  'energía (eV)': 'enerxía (eV)',
+  'Emite': 'Emite',
+  'Absorbe': 'Absorbe',
+  'Choque': 'Choque',
+  'Rebota': 'Rebota',
+  'Excitado': 'Excitado',
+  'Luz de {wl} nm: el electrón baja de {de} a {a}': 'Luz de {wl} nm: o electrón baixa de {de} a {a}',
+  'Infrarrojo de {wl} nm (no se ve): el electrón baja de {de} a {a}': 'Infravermello de {wl} nm (non se ve): o electrón baixa de {de} a {a}',
+  'Luz de {wl} nm: el electrón sube de {de} a {a}': 'Luz de {wl} nm: o electrón sobe de {de} a {a}',
+  'El electrón cede {e} eV y el átomo sube de {de} a {a}': 'O electrón cede {e} eV e o átomo sobe de {de} a {a}',
+  'Al electrón le falta energía para cualquier salto: el átomo no cambia': 'Ao electrón fáltalle enerxía para calquera salto: o átomo non cambia',
+  'Con {v} eV los electrones no pueden excitar ningún átomo: no hay luz': 'Con {v} eV os electróns non poden excitar ningún átomo: non hai luz',
+  'Los electrones chocan con los átomos y los excitan; al bajar de nivel emiten las rayas del espectro': 'Os electróns chocan cos átomos e excítanos; ao baixar de nivel emiten as raias do espectro',
+  'El electrón está en {nivel} ({e} eV): pronto bajará y emitirá luz': 'O electrón está en {nivel} ({e} eV): axiña baixará e emitirá luz',
+  'Haz clic en la fuente para disparar un fotón': 'Fai clic na fonte para disparar un fotón',
+  'Llega luz de todos los colores: solo absorbe los fotones con la energía justa para un salto': 'Chega luz de todas as cores: só absorbe os fotóns coa enerxía xusta para un salto',
+  'Solo absorbe la luz de {wl} nm si coincide con un salto entre niveles': 'Só absorbe a luz de {wl} nm se coincide cun salto entre niveis',
+  'Haz clic en el cañón para disparar un electrón': 'Fai clic no canón para disparar un electrón',
+  'Con {e} eV el electrón no tiene energía para ningún salto': 'Con {e} eV o electrón non ten enerxía para ningún salto',
+  'Con {e} eV el electrón puede subir el átomo hasta {nivel}': 'Con {e} eV o electrón pode subir o átomo ata {nivel}',
 };

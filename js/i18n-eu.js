@@ -2,8 +2,8 @@
 window.I18N_EU = {
   // Cabecera y descripción
   'Espectros Atómicos — Simulación Interactiva': 'Espektro Atomikoak — Simulazio Interaktiboa',
-  'Espectros Atómicos': 'Espektro Atomikoak',
-  'Absorción, Emisión y Niveles de Energía': 'Absortzioa, Emisioa eta Energia-mailak',
+  'Espectros atómicos': 'Espektro atomikoak',
+  'Absorción, emisión y niveles de energía': 'Absortzioa, emisioa eta energia-mailak',
   'Descripción y conceptos clave': 'Deskribapena eta funtsezko kontzeptuak',
   'desc-intro': 'Atomoek energia oso zehatzetako fotoiak bakarrik xurga edo igor ditzakete, beren energia-mailen arteko jauziei dagozkienak. Horrek espektro bakarrak sortzen ditu, elementu bakoitzaren "hatz-marka" bat bezalakoak.',
   'Absorción: fotón in → electrón sube ↑': 'Absortzioa: fotoia sartu → elektroia igo ↑',
@@ -15,7 +15,7 @@ window.I18N_EU = {
   'absorción / emisión': 'absortzioa / emisioa',
   'Colisión': 'Talka',
   'bombardeo electrónico': 'elektroi-bonbardaketa',
-  'Gas Ionizado': 'Gas Ionizatua',
+  'Gas ionizado': 'Gas ionizatua',
   'lámpara de gas': 'gas-lanpara',
 
   // Selector de átomo
@@ -31,7 +31,7 @@ window.I18N_EU = {
   'Neón (Ne)': 'Neona (Ne)',
 
   // Modo fotones
-  'Fuente de Luz': 'Argi-iturria',
+  'Fuente de luz': 'Argi-iturria',
   'Luz blanca': 'Argi zuria',
   'Monocromática': 'Monokromatikoa',
   'Longitud de onda': 'Uhin-luzera',
@@ -47,7 +47,7 @@ window.I18N_EU = {
   'Máximo': 'Maximoa',
 
   // Modo colisión
-  'Cañón de Electrones': 'Elektroi-kanoia',
+  'Cañón de electrones': 'Elektroi-kanoia',
   'Energía del electrón': 'Elektroiaren energia',
   '3,0 eV': '3,0 eV',
   '0,5 eV': '0,5 eV',
@@ -63,7 +63,7 @@ window.I18N_EU = {
   'Con {e} eV puedes alcanzar:': 'Irits zaitezkeen mailak ({e} eV):',
 
   // Modo gas
-  'Lámpara de Gas': 'Gas-lanpara',
+  'Lámpara de gas': 'Gas-lanpara',
   'Voltaje del tubo': 'Hodiaren tentsioa',
   '5,0 eV': '5,0 eV',
   'Densidad del gas': 'Gasaren dentsitatea',
@@ -122,5 +122,29 @@ window.I18N_EU = {
   '{x} átomos excitados': '{x} atomo kitzikatu',
   'Todos en reposo': 'Guztiak oinarrizko egoeran',
   // Sello de la zona de simulación (js/sello.js)
-  'Más simulaciones en simulaciencia.es': 'Simulazio gehiago simulaciencia.es webgunean'
+  'Más simulaciones en simulaciencia.es': 'Simulazio gehiago simulaciencia.es webgunean',
+  // Estilo juego: mascota, bocadillo y rótulos del lienzo
+  'En pausa': 'Pausan',
+  'no se ve': 'ez da ikusten',
+  'Espectro de emisión': 'Emisio-espektroa',
+  'energía (eV)': 'energia (eV)',
+  'Emite': 'Igortzen du',
+  'Absorbe': 'Xurgatzen du',
+  'Choque': 'Talka',
+  'Rebota': 'Errebotatzen du',
+  'Excitado': 'Kitzikatua',
+  'Luz de {wl} nm: el electrón baja de {de} a {a}': '{wl} nm-ko argia: elektroia {de} mailatik {a} mailara jaisten da',
+  'Infrarrojo de {wl} nm (no se ve): el electrón baja de {de} a {a}': '{wl} nm-ko infragorria (ez da ikusten): elektroia {de} mailatik {a} mailara jaisten da',
+  'Luz de {wl} nm: el electrón sube de {de} a {a}': '{wl} nm-ko argia: elektroia {de} mailatik {a} mailara igotzen da',
+  'El electrón cede {e} eV y el átomo sube de {de} a {a}': 'Elektroiak {e} eV ematen ditu eta atomoa {de} mailatik {a} mailara igotzen da',
+  'Al electrón le falta energía para cualquier salto: el átomo no cambia': 'Elektroiari energia falta zaio edozein jauzitarako: atomoa ez da aldatzen',
+  'Con {v} eV los electrones no pueden excitar ningún átomo: no hay luz': '{v} eV-rekin elektroiek ezin dute atomorik kitzikatu: ez dago argirik',
+  'Los electrones chocan con los átomos y los excitan; al bajar de nivel emiten las rayas del espectro': 'Elektroiek atomoekin talka egin eta kitzikatu egiten dituzte; mailaz jaistean espektroaren marrak igortzen dituzte',
+  'El electrón está en {nivel} ({e} eV): pronto bajará y emitirá luz': 'Elektroia {nivel} mailan dago ({e} eV): laster jaitsi eta argia igorriko du',
+  'Haz clic en la fuente para disparar un fotón': 'Egin klik iturrian fotoi bat jaurtitzeko',
+  'Llega luz de todos los colores: solo absorbe los fotones con la energía justa para un salto': 'Kolore guztietako argia iristen da: jauzi baterako energia zehatza duten fotoiak bakarrik xurgatzen ditu',
+  'Solo absorbe la luz de {wl} nm si coincide con un salto entre niveles': '{wl} nm-ko argia mailen arteko jauzi batekin bat badator bakarrik xurgatzen du',
+  'Haz clic en el cañón para disparar un electrón': 'Egin klik kanoian elektroi bat jaurtitzeko',
+  'Con {e} eV el electrón no tiene energía para ningún salto': '{e} eV-rekin elektroiak ez du energiarik inolako jauzitarako',
+  'Con {e} eV el electrón puede subir el átomo hasta {nivel}': '{e} eV-rekin elektroiak atomoa {nivel} mailaraino igo dezake',
 };

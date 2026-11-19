@@ -2,8 +2,8 @@
 window.I18N_EN = {
   // Cabecera y descripción
   'Espectros Atómicos — Simulación Interactiva': 'Atomic Spectra — Interactive Simulation',
-  'Espectros Atómicos': 'Atomic Spectra',
-  'Absorción, Emisión y Niveles de Energía': 'Absorption, Emission and Energy Levels',
+  'Espectros atómicos': 'Atomic spectra',
+  'Absorción, emisión y niveles de energía': 'Absorption, emission and energy levels',
   'Descripción y conceptos clave': 'Description and key ideas',
   'desc-intro': 'Atoms can only absorb or emit photons of very specific energies, matching the jumps between their energy levels. This produces unique spectra, like a "fingerprint" for each element.',
   'Absorción: fotón in → electrón sube ↑': 'Absorption: photon in → electron moves up ↑',
@@ -15,7 +15,7 @@ window.I18N_EN = {
   'absorción / emisión': 'absorption / emission',
   'Colisión': 'Collision',
   'bombardeo electrónico': 'electron bombardment',
-  'Gas Ionizado': 'Ionised Gas',
+  'Gas ionizado': 'Ionised gas',
   'lámpara de gas': 'gas lamp',
 
   // Selector de átomo
@@ -31,7 +31,7 @@ window.I18N_EN = {
   'Neón (Ne)': 'Neon (Ne)',
 
   // Modo fotones
-  'Fuente de Luz': 'Light Source',
+  'Fuente de luz': 'Light source',
   'Luz blanca': 'White light',
   'Monocromática': 'Monochromatic',
   'Longitud de onda': 'Wavelength',
@@ -47,7 +47,7 @@ window.I18N_EN = {
   'Máximo': 'Maximum',
 
   // Modo colisión
-  'Cañón de Electrones': 'Electron Gun',
+  'Cañón de electrones': 'Electron gun',
   'Energía del electrón': 'Electron energy',
   '3,0 eV': '3.0 eV',
   '0,5 eV': '0.5 eV',
@@ -63,7 +63,7 @@ window.I18N_EN = {
   'Con {e} eV puedes alcanzar:': 'With {e} eV you can reach:',
 
   // Modo gas
-  'Lámpara de Gas': 'Gas Discharge Lamp',
+  'Lámpara de gas': 'Gas discharge lamp',
   'Voltaje del tubo': 'Tube voltage',
   '5,0 eV': '5.0 eV',
   'Densidad del gas': 'Gas density',
@@ -122,5 +122,29 @@ window.I18N_EN = {
   '{x} átomos excitados': '{x} excited atoms',
   'Todos en reposo': 'All in ground state',
   // Sello de la zona de simulación (js/sello.js)
-  'Más simulaciones en simulaciencia.es': 'More simulations at simulaciencia.es'
+  'Más simulaciones en simulaciencia.es': 'More simulations at simulaciencia.es',
+  // Estilo juego: mascota, bocadillo y rótulos del lienzo
+  'En pausa': 'Paused',
+  'no se ve': 'not visible',
+  'Espectro de emisión': 'Emission spectrum',
+  'energía (eV)': 'energy (eV)',
+  'Emite': 'Emits',
+  'Absorbe': 'Absorbs',
+  'Choque': 'Collision',
+  'Rebota': 'Bounces',
+  'Excitado': 'Excited',
+  'Luz de {wl} nm: el electrón baja de {de} a {a}': '{wl} nm light: the electron drops from {de} to {a}',
+  'Infrarrojo de {wl} nm (no se ve): el electrón baja de {de} a {a}': '{wl} nm infrared (not visible): the electron drops from {de} to {a}',
+  'Luz de {wl} nm: el electrón sube de {de} a {a}': '{wl} nm light: the electron rises from {de} to {a}',
+  'El electrón cede {e} eV y el átomo sube de {de} a {a}': 'The electron gives up {e} eV and the atom rises from {de} to {a}',
+  'Al electrón le falta energía para cualquier salto: el átomo no cambia': 'The electron lacks the energy for any jump: the atom does not change',
+  'Con {v} eV los electrones no pueden excitar ningún átomo: no hay luz': 'With {v} eV the electrons cannot excite any atom: no light',
+  'Los electrones chocan con los átomos y los excitan; al bajar de nivel emiten las rayas del espectro': 'Electrons collide with the atoms and excite them; when they drop a level they emit the spectral lines',
+  'El electrón está en {nivel} ({e} eV): pronto bajará y emitirá luz': 'The electron is at {nivel} ({e} eV): it will soon drop and emit light',
+  'Haz clic en la fuente para disparar un fotón': 'Click the source to fire a photon',
+  'Llega luz de todos los colores: solo absorbe los fotones con la energía justa para un salto': 'Light of every colour arrives: it only absorbs photons with exactly the energy of a jump',
+  'Solo absorbe la luz de {wl} nm si coincide con un salto entre niveles': 'It only absorbs {wl} nm light if it matches a jump between levels',
+  'Haz clic en el cañón para disparar un electrón': 'Click the gun to fire an electron',
+  'Con {e} eV el electrón no tiene energía para ningún salto': 'With {e} eV the electron has no energy for any jump',
+  'Con {e} eV el electrón puede subir el átomo hasta {nivel}': 'With {e} eV the electron can raise the atom up to {nivel}',
 };

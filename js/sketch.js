@@ -128,9 +128,10 @@ class Photon {
       this.alpha -= 18;
       if (this.alpha <= 0) this.done = true;
     }
-    // Eliminar si sale del canvas
+    // Eliminar si sale del canvas o entra en el diagrama de niveles
     if (this.x < -30 || this.x > CV_W + 30 || this.y < -30 || this.y > CV_H + 30)
       this.done = true;
+    if (enDiagrama(this.x, this.y)) this.done = true;
   }
   draw() {
     if (this.done) return;
@@ -138,14 +139,18 @@ class Photon {
       let a = (i / this.trail.length) * this.alpha * 0.35;
       noStroke();
       fill(this.r, this.g, this.b, a);
-      circle(this.trail[i].x, this.trail[i].y, this.size * 0.6);
+      circle(this.trail[i].x, this.trail[i].y, this.size * 0.7);
     }
     noStroke();
-    fill(this.r, this.g, this.b, this.alpha * 0.22);
+    fill(this.r, this.g, this.b, this.alpha * 0.25);
     circle(this.x, this.y, this.size * 2.8);
+    // Contorno de tinta: los fotones claros (amarillo, cian) se ven también en el tema Día
+    stroke(...CT.ink, this.alpha); strokeWeight(1.8);
     fill(this.r, this.g, this.b, this.alpha);
-    circle(this.x, this.y, this.size);
+    circle(this.x, this.y, this.size * 1.25);
+    noStroke();
   }
+
 }
 
 class CollisionElectron {
@@ -164,7 +169,7 @@ class CollisionElectron {
     this.trail.push({ x: this.x, y: this.y });
     if (this.trail.length > 8) this.trail.shift();
     this.x += this.vx;
-    if (this.x > CV_W + 20) this.done = true;
+    if (this.x > CV_W + 20 || enDiagrama(this.x, this.y)) this.done = true;
   }
   draw() {
     if (this.done) return;
@@ -172,14 +177,14 @@ class CollisionElectron {
       let a = (i / this.trail.length) * 160;
       noStroke();
       fill(0, 200, 255, a);
-      circle(this.trail[i].x, this.trail[i].y, 3);
+      circle(this.trail[i].x, this.trail[i].y, 4);
     }
-    fill(0, 220, 255, 220);
+    stroke(...CT.ink); strokeWeight(1.8);
+    fill(0, 220, 255);
+    circle(this.x, this.y, 10);
     noStroke();
-    circle(this.x, this.y, 7);
-    fill(180, 240, 255, 180);
-    circle(this.x, this.y, 3);
   }
+
 }
 
 class GasAtomEntity {
@@ -252,38 +257,37 @@ class GasAtomEntity {
     }
   }
   draw() {
+    // Átomo en reposo: gris azulado. Excitado: brilla con el color de la luz que
+    // emitirá al bajar al nivel más bajo, y da un pequeño salto al excitarse.
     let nc = this.data.nucleusColor;
     let glow = this.level > 0;
+    let tr = glow ? findTransition(this.data, 0, this.level) : null;
+    let col = glow ? (tr && tr.visible ? wlToRGB(tr.wl) : nc) : CT.nivel;
+    let s = (glow && !MOV_REDUCIDO) ? 1 + 0.25 * sin(map(this.glowTimer, 20, 0, 0, PI)) : 1;
     push();
-    if (this.glowTimer > 0) {
-      let a = map(this.glowTimer, 0, 20, 0, 120);
+    translate(this.x, this.y);
+    scale(s);
+    if (glow) {
       noStroke();
-      fill(nc[0], nc[1], nc[2], a);
-      circle(this.x, this.y, 32);
+      fill(col[0], col[1], col[2], 70);
+      circle(0, 0, 46);
     }
-    noStroke();
-    if (glow) {
-      fill(nc[0], nc[1], nc[2], 200);
-      circle(this.x, this.y, 22);
-      fill(255, 255, 255, 180);
-    } else {
-      fill(nc[0] * 0.5, nc[1] * 0.5, nc[2] * 0.5, 180);
-      circle(this.x, this.y, 18);
-      fill(nc[0], nc[1], nc[2], 160);
-    }
-    circle(this.x, this.y, glow ? 10 : 8);
-    fill(255, 255, 255, glow ? 240 : 140);
+    stroke(...CT.ink); strokeWeight(2);
+    fill(...col);
+    circle(0, 0, glow ? 30 : 26);
+    noStroke(); fill(255, 255, 255, 110);
+    ellipse(-5, -6, 9, 6);
+    let claro = (col[0] * 0.299 + col[1] * 0.587 + col[2] * 0.114) > 120;
+    fill(...(claro ? [7, 26, 43] : [255, 255, 255]));
     textAlign(CENTER, CENTER);
-    textSize(10);
-    noStroke();
-    text(this.data.symbol, this.x, this.y);
-    if (glow) {
-      fill(255, 255, 150, 210);
-      textSize(9);
-      text(this.data.levelLabels[this.level], this.x, this.y + 16);
-    }
+    textStyle(BOLD);
+    textSize(13);
+    text(this.data.symbol, 0, 0);
+    textStyle(NORMAL);
     pop();
+    if (glow) pildora(this.data.levelLabels[this.level], this.x, this.y + 26, CT.exciteTxt, 12);
   }
+
 }
 
 class GasElectron {
@@ -307,21 +311,51 @@ class GasElectron {
     for (let i = 0; i < this.trail.length; i++) {
       let a = (i / this.trail.length) * 120;
       noStroke(); fill(0, 200, 255, a);
-      circle(this.trail[i].x, this.trail[i].y, 3);
+      circle(this.trail[i].x, this.trail[i].y, 4);
     }
-    fill(0, 220, 255, 200);
+    stroke(...CT.ink); strokeWeight(1.5);
+    fill(0, 220, 255);
+    circle(this.x, this.y, 8);
     noStroke();
-    circle(this.x, this.y, 5);
   }
+
 }
 
 // ─── ESTADO GLOBAL ───────────────────────────────────────────────
-const CV_W = 900, CV_H = 660;
-const ATOM_CX = 360, ATOM_CY = 270;
-const SPEC_Y  = 490, SPEC_X1 = 30, SPEC_X2 = 870, SPEC_H = 76;
-const EXT_SPEC_Y = 572, EXT_SPEC_H = 32;
-const DIAG_X  = 626, DIAG_Y  = 30,  DIAG_W = 240, DIAG_H = 400;
-const TUBE_X  = 30,  TUBE_Y  = 28,  TUBE_W = 840, TUBE_H = 430;
+// Dos disposiciones del lienzo: apaisada (ordenador, pizarra digital) y
+// vertical (móvil): el átomo arriba, el diagrama debajo y el espectro al final.
+let CV_W, CV_H, ATOM_CX, ATOM_CY, SPEC_Y, SPEC_X1, SPEC_X2, SPEC_H, EXT_SPEC_Y, EXT_SPEC_H;
+let DIAG_X, DIAG_Y, DIAG_W, DIAG_H, TUBE_X, TUBE_Y, TUBE_W, TUBE_H;
+let RK = 1;            // escala de los radios de las órbitas
+let VERTICAL = false;
+const BUB_Y = 12;   // franja de la mascota y su bocadillo
+let BUB_H = 52;
+function aplicarGeometria(vertical) {
+  VERTICAL = vertical;
+  if (!vertical) {
+    CV_W = 900; CV_H = 664; RK = 1; BUB_H = 52;
+    ATOM_CX = 360; ATOM_CY = 296;
+    DIAG_X = 624; DIAG_Y = 78; DIAG_W = 260; DIAG_H = 400;
+    TUBE_X = 16;  TUBE_Y = 96; TUBE_W = 868; TUBE_H = 382;
+    SPEC_X1 = 16; SPEC_X2 = 884; SPEC_Y = 496; SPEC_H = 84;
+    EXT_SPEC_Y = 590; EXT_SPEC_H = 34;
+  } else {
+    CV_W = 520; CV_H = 900; RK = 0.82; BUB_H = 66;
+    ATOM_CX = 292; ATOM_CY = 252;
+    DIAG_X = 14; DIAG_Y = 420; DIAG_W = 492; DIAG_H = 300;
+    TUBE_X = 14; TUBE_Y = 96; TUBE_W = 492; TUBE_H = 624;
+    SPEC_X1 = 14; SPEC_X2 = 506; SPEC_Y = 734; SPEC_H = 84;
+    EXT_SPEC_Y = 828; EXT_SPEC_H = 34;
+  }
+}
+aplicarGeometria(false);
+// ¿Está el punto dentro del diagrama de niveles? (fuera del modo gas)
+function enDiagrama(x, y) {
+  return currentMode !== 'gas' && x > DIAG_X - 4 && x < DIAG_X + DIAG_W + 4 &&
+         y > DIAG_Y - 4 && y < DIAG_Y + DIAG_H + 8;
+}
+// Radio de la órbita i en el dibujo
+function R(i) { return atomData.radii[i] * RK; }
 
 let currentMode    = 'fotones';
 let currentAtomKey = 'hidrogeno';
@@ -380,6 +414,11 @@ let electronRCurrent = 68;
 
 // Etiqueta de estado en canvas (modo fotones/colisión)
 let stateLbl    = '';
+// Lo último que ha pasado, para el bocadillo de la mascota
+let evTag = '', evTxt = '', evCol = [200, 200, 200], evT = 0;
+function contar(tag, txt, col, frames) {
+  evTag = tag; evTxt = txt; evCol = col; evT = frames || 240;
+}
 let stateLblClr = [200, 200, 200];
 let stateLblT   = 0;
 
@@ -409,64 +448,86 @@ let extSpecBgGfx  = null;
 // ─── HELPERS DIAGRAMA DE NIVELES ────────────────────────────────
 function diagTargetY() {
   if (!atomData) return DIAG_Y + DIAG_H - 22;
-  let maxE = atomData.energies[atomData.levels - 1];
-  return map(atomData.energies[electronLevel], -0.1, maxE + 0.3,
-             DIAG_Y + DIAG_H - 22, DIAG_Y + 32);
+  return eToYDiag(atomData.energies[electronLevel]);
 }
 
 // ─── PALETAS DE TEMA PARA EL CANVAS ─────────────────────────────
 const CANVAS_THEMES = {
+  // Pizarra: azules de SimulaCiencia con el estilo del juego «Carga cero»
   dark: {
-    bg:         [12,  14,  18 ],
-    panelBg:    [16,  22,  32 ],
-    panelBord:  [50,  70,  90 ],
-    txtBright:  [140, 170, 200],
-    txtMid:     [100, 130, 160],
-    orbitLbl:   [160, 180, 200],
-    specBg:     [8,   10,  14 ],
-    specBord:   [50,  65,  85 ],
-    specTitle:  [120, 150, 190],
-    specTick:   [100, 120, 150],
-    srcBody:    [30,  40,  55 ],
-    srcStroke:  [60,  80,  100],
-    srcArrow:   [150, 170, 190],
-    tubeBord:   [60,  100, 140],
-    electrode:  [80,  100, 130],
-    tubeText:   [150, 180, 220],
-    gasCnt:     [90,  140, 180],
-    sttBoxBg:   [5,   10,  20 ],
-    sttBoxTxt:  [180, 200, 220],
-    pauseOvl:   [0,   0,   0  ],
-    pauseTxt:   [180, 200, 220],
-    transNote:  [90,  90,  90 ],
-    exciteTxt:  [255, 200, 80 ],
-    diagEval:   [100, 140, 180],
+    bg:         [17,  49,  79 ],
+    panelBg:    [21,  57,  90 ],
+    panelBord:  [45,  105, 150],
+    txtBright:  [238, 247, 255],
+    txtMid:     [181, 211, 236],
+    orbitLbl:   [238, 247, 255],
+    specBg:     [7,   22,  38 ],
+    specBord:   [45,  105, 150],
+    specTitle:  [238, 247, 255],
+    specTick:   [181, 211, 236],
+    srcBody:    [29,  74,  114],
+    srcStroke:  [7,   26,  43 ],
+    srcArrow:   [181, 211, 236],
+    tubeBord:   [45,  105, 150],
+    electrode:  [150, 185, 215],
+    tubeText:   [238, 247, 255],
+    gasCnt:     [181, 211, 236],
+    sttBoxBg:   [7,   26,  43 ],
+    sttBoxTxt:  [238, 247, 255],
+    pauseOvl:   [7,   26,  43 ],
+    pauseTxt:   [255, 255, 255],
+    transNote:  [181, 211, 236],
+    exciteTxt:  [255, 216, 74 ],
+    diagEval:   [181, 211, 236],
+    panel:      [21,  57,  90 ],
+    panel2:     [29,  74,  114],
+    border:     [45,  105, 150],
+    ink:        [7,   26,  43 ],
+    text:       [238, 247, 255],
+    title:      [255, 255, 255],
+    muted:      [181, 211, 236],
+    accent:     [0,   200, 255],
+    electron:   [52,  227, 168],
+    nivel:      [140, 185, 225],
+    fun:        true,
   },
+  // Día: claro sin llegar a blanco
   light: {
-    bg:         [205, 218, 234],
-    panelBg:    [222, 232, 248],
-    panelBord:  [140, 160, 190],
-    txtBright:  [30,  55,  110],
-    txtMid:     [60,  85,  140],
-    orbitLbl:   [30,  55,  110],
-    specBg:     [190, 205, 226],
-    specBord:   [130, 150, 180],
-    specTitle:  [30,  55,  110],
-    specTick:   [80,  100, 140],
-    srcBody:    [175, 192, 218],
-    srcStroke:  [110, 135, 175],
-    srcArrow:   [80,  105, 160],
-    tubeBord:   [60,  100, 160],
-    electrode:  [90,  110, 152],
-    tubeText:   [30,  60,  120],
-    gasCnt:     [30,  70,  140],
-    sttBoxBg:   [215, 228, 248],
-    sttBoxTxt:  [10,  30,  90 ],
-    pauseOvl:   [180, 200, 228],
-    pauseTxt:   [10,  30,  90 ],
-    transNote:  [80,  105, 160],
-    exciteTxt:  [180, 100, 0  ],
-    diagEval:   [70,  100, 160],
+    bg:         [238, 245, 251],
+    panelBg:    [247, 251, 255],
+    panelBord:  [169, 198, 222],
+    txtBright:  [11,  34,  54 ],
+    txtMid:     [63,  95,  122],
+    orbitLbl:   [19,  48,  74 ],
+    specBg:     [7,   22,  38 ],
+    specBord:   [169, 198, 222],
+    specTitle:  [238, 247, 255],
+    specTick:   [181, 211, 236],
+    srcBody:    [228, 239, 248],
+    srcStroke:  [19,  48,  74 ],
+    srcArrow:   [63,  95,  122],
+    tubeBord:   [169, 198, 222],
+    electrode:  [111, 139, 163],
+    tubeText:   [19,  48,  74 ],
+    gasCnt:     [63,  95,  122],
+    sttBoxBg:   [247, 251, 255],
+    sttBoxTxt:  [19,  48,  74 ],
+    pauseOvl:   [238, 245, 251],
+    pauseTxt:   [11,  34,  54 ],
+    transNote:  [63,  95,  122],
+    exciteTxt:  [180, 83,  9  ],
+    diagEval:   [63,  95,  122],
+    panel:      [247, 251, 255],
+    panel2:     [228, 239, 248],
+    border:     [169, 198, 222],
+    ink:        [19,  48,  74 ],
+    text:       [19,  48,  74 ],
+    title:      [11,  34,  54 ],
+    muted:      [63,  95,  122],
+    accent:     [3,   105, 161],
+    electron:   [8,   128, 90 ],
+    nivel:      [111, 150, 185],
+    fun:        true,
   },
   contrast: {
     bg:         [0,   0,   0  ],
@@ -493,6 +554,16 @@ const CANVAS_THEMES = {
     transNote:  [200, 200, 0  ],
     exciteTxt:  [255, 255, 0  ],
     diagEval:   [0,   255, 255],
+    panel:      [0,   0,   0  ],
+    panel2:     [0,   0,   0  ],
+    border:     [255, 255, 0  ],
+    ink:        [0,   0,   0  ],
+    text:       [255, 255, 255],
+    title:      [255, 255, 0  ],
+    muted:      [0,   255, 255],
+    accent:     [0,   255, 255],
+    electron:   [0,   255, 180],
+    nivel:      [200, 200, 200],
   }
 };
 let CT = CANVAS_THEMES.dark;
@@ -500,6 +571,171 @@ let CT = CANVAS_THEMES.dark;
 // Contadores del modo gas
 let gasPhotonCounts = {};
 let gasPhotonTotal  = 0;
+
+// ─── ESTILO JUEGO: MASCOTA, BOCADILLO Y CHISPAS ──────────────────
+const MOV_REDUCIDO = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const FUENTE_TEXTO = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif';
+let etiquetaMascota = '', desdeMascota = -1e9, chispas = [];
+
+function salto(t0) {
+  if (MOV_REDUCIDO) return 1;
+  let e = (millis() - t0) / 450;
+  if (e >= 1) return 1;
+  return 1 + 0.35 * sin(e * PI) * (1 - e);
+}
+
+function lanzarChispas(x, y, col, n) {
+  if (MOV_REDUCIDO) return;
+  for (let i = 0; i < n; i++) {
+    let a = random(TWO_PI), v = random(1.5, 4);
+    chispas.push({ x, y, vx: cos(a) * v, vy: sin(a) * v - 1, vida: 1, col, r: random(3, 6), estrella: random() < 0.5 });
+  }
+}
+
+function drawChispas() {
+  drawingContext.save();
+  drawingContext.beginPath();
+  drawingContext.rect(6, 2, 120, BUB_Y + BUB_H + 6);   // nunca salen de la zona de la mascota
+  drawingContext.clip();
+  for (let i = chispas.length - 1; i >= 0; i--) {
+    let c = chispas[i];
+    if (!isPaused) { c.x += c.vx; c.y += c.vy; c.vy += 0.12; c.vida -= 0.04; }
+    if (c.vida <= 0) { chispas.splice(i, 1); continue; }
+    noStroke(); fill(...c.col, 255 * c.vida);
+    if (c.estrella) estrella(c.x, c.y, c.r * 1.3, c.r * 0.5);
+    else ellipse(c.x, c.y, c.r * 2 * c.vida);
+  }
+  drawingContext.restore();
+}
+
+function estrella(x, y, r1, r2) {
+  beginShape();
+  for (let i = 0; i < 10; i++) {
+    let a = -HALF_PI + i * PI / 5, r = i % 2 ? r2 : r1;
+    vertex(x + cos(a) * r, y + sin(a) * r);
+  }
+  endShape(CLOSE);
+}
+
+// Mascota: partícula sonriente que dice el mensaje en un bocadillo
+function drawMascota(cx, cy, r, col) {
+  let bote = (MOV_REDUCIDO || isPaused) ? 0 : sin(millis() / 260) * 1.5;
+  let parpadeo = millis() % 4200 > 4050;
+  push();
+  translate(cx, cy + bote);
+  let s = salto(desdeMascota);
+  scale(s, 2 - s);
+  noStroke(); fill(0, 0, 0, 45); ellipse(0, r + 3 - bote, r * 1.5, 5);
+  stroke(...CT.ink); strokeWeight(2.5); fill(...col);
+  ellipse(0, 0, r * 2);
+  noStroke(); fill(255, 255, 255, 150);
+  ellipse(-r * 0.42, -r * 0.45, r * 0.55, r * 0.35);
+  fill(...CT.ink);
+  if (parpadeo) {
+    stroke(...CT.ink); strokeWeight(2);
+    line(-r * 0.42, -r * 0.05, -r * 0.18, -r * 0.05); line(r * 0.18, -r * 0.05, r * 0.42, -r * 0.05);
+  } else {
+    ellipse(-r * 0.3, -r * 0.08, r * 0.2, r * 0.3); ellipse(r * 0.3, -r * 0.08, r * 0.2, r * 0.3);
+  }
+  noFill(); stroke(...CT.ink); strokeWeight(2.2);
+  arc(0, r * 0.18, r * 0.6, r * 0.45, 0.15 * PI, 0.85 * PI);
+  noStroke(); fill(255, 120, 150, 120);
+  ellipse(-r * 0.58, r * 0.22, r * 0.3); ellipse(r * 0.58, r * 0.22, r * 0.3);
+  pop();
+}
+
+// Nombre corto del elemento («Hidrógeno»), en el idioma de la página
+function nombreElemento() {
+  return i18n.t(atomData.name).replace(/\s*\(.*\)\s*$/, '');
+}
+
+// Qué dice la mascota: lo último que ha pasado o, si no, qué hacer ahora
+function mensajeMascota() {
+  if (evT > 0) return { tag: evTag, txt: evTxt, col: evCol };
+  let tag = nombreElemento(), col = atomData.nucleusColor;
+  if (currentMode === 'gas') {
+    let e1 = atomData.energies[1];
+    let txt = gasVoltage < e1
+      ? i18n.t('Con {v} eV los electrones no pueden excitar ningún átomo: no hay luz', { v: fmt(gasVoltage, 1) })
+      : i18n.t('Los electrones chocan con los átomos y los excitan; al bajar de nivel emiten las rayas del espectro');
+    let lampara = i18n.t('Lámpara de {nombre}', { nombre: tag.toLocaleLowerCase() });
+    return { tag: VERTICAL ? tag : lampara.charAt(0).toLocaleUpperCase() + lampara.slice(1), txt, col };
+  }
+  if (electronLevel > 0)
+    return { tag: i18n.t('Excitado'), col: CT.exciteTxt,
+             txt: i18n.t('El electrón está en {nivel} ({e} eV): pronto bajará y emitirá luz',
+                         { nivel: atomData.levelLabels[electronLevel], e: fmt(atomData.energies[electronLevel], 2) }) };
+  if (currentMode === 'fotones') {
+    if (fotoSingleShot) return { tag, col, txt: i18n.t('Haz clic en la fuente para disparar un fotón') };
+    if (lightType === 'white') return { tag, col, txt: i18n.t('Llega luz de todos los colores: solo absorbe los fotones con la energía justa para un salto') };
+    return { tag, col, txt: i18n.t('Solo absorbe la luz de {wl} nm si coincide con un salto entre niveles', { wl: monoWl }) };
+  }
+  // Colisión
+  if (collSingleShot) return { tag, col, txt: i18n.t('Haz clic en el cañón para disparar un electrón') };
+  let alc = -1;
+  for (let lv = 1; lv < atomData.levels; lv++) if (electronEnergy >= atomData.energies[lv]) alc = lv;
+  return { tag, col, txt: alc < 0
+    ? i18n.t('Con {e} eV el electrón no tiene energía para ningún salto', { e: fmt(electronEnergy, 1) })
+    : i18n.t('Con {e} eV el electrón puede subir el átomo hasta {nivel}', { e: fmt(electronEnergy, 1), nivel: atomData.levelLabels[alc] }) };
+}
+
+// Franja superior: mascota + bocadillo con etiqueta y mensaje
+function drawBocadillo() {
+  let { tag, txt, col } = mensajeMascota();
+  let x = 14, y = BUB_Y, w = CV_W - 28, h = BUB_H;
+  if (tag + txt !== etiquetaMascota) {
+    if (etiquetaMascota && evT > 0) lanzarChispas(x + 24, y + h / 2, col, 12);
+    etiquetaMascota = tag + txt; desdeMascota = millis();
+  }
+  // En el tema Día la mascota, un poco más clara
+  let cm = CT === CANVAS_THEMES.light ? col.map(v => lerp(v, 255, 0.35)) : col;
+  drawMascota(x + 24, y + h / 2, 20, cm);
+
+  let bx = x + 58, my = y + h / 2;
+  noStroke(); fill(...CT.ink); rect(bx, y + 3, w - 58, h, 18);
+  stroke(...CT.border); strokeWeight(2); fill(...CT.panel);
+  triangle(bx - 10, my, bx + 4, my - 8, bx + 4, my + 8);
+  rect(bx, y, w - 58, h, 18);
+  noStroke(); fill(...CT.panel);
+  triangle(bx - 7, my, bx + 3, my - 6, bx + 3, my + 6);
+
+  let tx = bx + 14;
+  if (tag) {
+    textStyle(BOLD); textSize(17);
+    let tw = textWidth(tag) + 26;
+    push();
+    translate(bx + 12 + tw / 2, my);
+    scale(salto(desdeMascota));
+    noStroke(); fill(...CT.ink); rect(-tw / 2, -13, tw, 30, 15);
+    fill(...col); rect(-tw / 2, -15, tw, 30, 15);
+    let claro = (col[0] * 0.299 + col[1] * 0.587 + col[2] * 0.114) > 120;
+    fill(...(claro ? [7, 26, 43] : [255, 255, 255]));
+    textAlign(CENTER, CENTER);
+    text(tag, 0, -1);
+    pop();
+    textStyle(NORMAL);
+    tx = bx + 12 + tw + 12;
+  }
+  textFont(FUENTE_TEXTO);
+  fill(...CT.text); textAlign(LEFT, CENTER);
+  // Texto grande para la pizarra; si no cabe, un poco menor
+  let ancho = x + w - tx - 14;
+  let tam = 17;
+  let lineas = () => {   // líneas que ocupa el texto partido por palabras
+    let n = 1, linea = '';
+    for (let pal of txt.split(' ')) {
+      let prueba = linea ? linea + ' ' + pal : pal;
+      if (textWidth(prueba) > ancho && linea) { n++; linea = pal; } else linea = prueba;
+    }
+    return n;
+  };
+  textSize(tam);
+  while (tam > 11 && lineas() * (tam + 2) > h - 6) { tam--; textSize(tam); }
+  textLeading(tam + 2);
+  text(txt, tx, y + 1, ancho, h - 2);
+  textFont('Fredoka');
+  textAlign(LEFT, BASELINE);
+}
 
 // ─── HELPERS ─────────────────────────────────────────────────────
 // Nivel al que baja el electrón desde `current`: uno inferior al azar, pero solo
@@ -580,6 +816,9 @@ function updateAtomCascade() {
     stateLblT   = 120;
     activeTr    = tr;
     activeTrT   = 120;
+    let datos = { wl: tr.wl, de: atomData.levelLabels[step.from], a: atomData.levelLabels[step.to] };
+    if (tr.visible) contar(i18n.t('Emite'), i18n.t('Luz de {wl} nm: el electrón baja de {de} a {a}', datos), wlToRGB(tr.wl));
+    else contar(i18n.t('Emite'), i18n.t('Infrarrojo de {wl} nm (no se ve): el electrón baja de {de} a {a}', datos), [200, 90, 50]);
   }
   electronLevel = step.to;
   if (atomCascade.length > 0) {
@@ -601,9 +840,10 @@ function resetSim() {
   inPhotons        = [];
   outPhotons       = [];
   collElectrons    = [];
-  electronRCurrent = atomData ? atomData.radii[0] : 68;
+  electronRCurrent = atomData ? R(0) : 68;
   stateLbl         = '';
   stateLblT        = 0;
+  evT              = 0;
   activeTr         = null;
   activeTrT        = 0;
   if (atomData) diagElectronRY = diagTargetY();
@@ -621,8 +861,8 @@ function initGasMode() {
   gasPhotonTotal  = 0;
   let n = gasDensity;
   for (let i = 0; i < n; i++) {
-    let x = random(TUBE_X + 25, TUBE_X + TUBE_W - 25);
-    let y = random(TUBE_Y + 25, TUBE_Y + TUBE_H - 25);
+    let x = random(TUBE_X + 50, TUBE_X + TUBE_W - 50);
+    let y = random(TUBE_Y + 30, TUBE_Y + TUBE_H - 66);
     gasAtomsList.push(new GasAtomEntity(x, y, atomData));
   }
 }
@@ -673,6 +913,12 @@ function buildStaticBuffers() {
 
 // ─── P5.JS SETUP ────────────────────────────────────────────────
 function setup() {
+  if (document.fonts) document.fonts.load('600 12px Fredoka');
+  // Doble resolución: el lienzo crece hasta llenar la zona de la simulación
+  // (pizarra digital) sin verse borroso
+  pixelDensity(Math.max(2, displayDensity()));
+  const mqVertical = window.matchMedia('(max-width: 700px)');
+  aplicarGeometria(mqVertical.matches);
   let canvas = createCanvas(CV_W, CV_H);
   canvas.parent('canvas-container');
   // El lienzo se escala para llenar su hueco sin deformarse: en un monitor o
@@ -682,16 +928,28 @@ function setup() {
     const cs = getComputedStyle(holder);
     const w = holder.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const h = holder.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    const k = Math.max(0.1, Math.min(w / CV_W, h / CV_H));
+    // En vertical (móvil) el lienzo ocupa todo el ancho y la página se desplaza
+    const k = VERTICAL ? Math.max(0.1, w / CV_W) : Math.max(0.1, Math.min(w / CV_W, h / CV_H));
     canvas.elt.style.width = (CV_W * k) + 'px';
     canvas.elt.style.height = (CV_H * k) + 'px';
   };
   fitCanvas();
   if (window.ResizeObserver) new ResizeObserver(fitCanvas).observe(holder);
+  const cambiarDisposicion = () => {
+    if (mqVertical.matches === VERTICAL) return;
+    aplicarGeometria(mqVertical.matches);
+    resizeCanvas(CV_W, CV_H);
+    buildStaticBuffers();
+    initGasMode();
+    diagElectronRY = diagTargetY();
+    fitCanvas();
+  };
+  if (mqVertical.addEventListener) mqVertical.addEventListener('change', cambiarDisposicion);
+  else if (mqVertical.addListener) mqVertical.addListener(cambiarDisposicion);
   frameRate(60);
-  textFont('monospace');
+  textFont('Fredoka');
   atomData = ATOMS_DATA[currentAtomKey];
-  electronRCurrent = atomData.radii[0];
+  electronRCurrent = R(0);
   buildStaticBuffers();
   setupControls();
   updateAtomDisplay();
@@ -714,7 +972,12 @@ function setup() {
 
 // ─── P5.JS DRAW ─────────────────────────────────────────────────
 function draw() {
-  background(...CT.bg);
+  // Tablero redondeado dibujado dentro del lienzo: escala con él (móvil)
+  clear();
+  stroke(...CT.border); strokeWeight(2); fill(...CT.bg);
+  rect(1, 1, width - 2, height - 2, CT.fun ? 30 : 12);
+  noStroke();
+  textFont('Fredoka');
 
   // Decaimiento del espectro (en pausa se congela, como todo lo demás)
   if (!isPaused) {
@@ -733,6 +996,7 @@ function draw() {
     drawCurrentMode(false);
     drawSpectrum();
     drawExtendedSpectrum();
+    drawBocadillo();
     drawPausedOverlay();
     return;
   }
@@ -740,6 +1004,9 @@ function draw() {
   drawCurrentMode(true);
   drawSpectrum();
   drawExtendedSpectrum();
+  if (evT > 0) evT--;
+  drawBocadillo();
+  drawChispas();
 
   if (frameCount % 8 === 0) updateUI();
 }
@@ -753,13 +1020,20 @@ function drawCurrentMode(animate) {
 }
 
 function drawPausedOverlay() {
-  fill(...CT.pauseOvl, 100);
+  // Velo suave sobre la simulación (no sobre el bocadillo) y una píldora «En pausa»
+  fill(...CT.pauseOvl, 110);
   noStroke();
-  rect(0, 0, CV_W, CV_H);
-  fill(...CT.pauseTxt, 200);
+  rect(2, BUB_Y + BUB_H + 8, CV_W - 4, CV_H - BUB_Y - BUB_H - 10, 0, 0, 28, 28);
+  let lbl = i18n.t('En pausa');
+  textSize(22); textStyle(BOLD);
+  let w = textWidth(lbl) + 40, cy = (SPEC_Y + BUB_Y + BUB_H) / 2;
+  fill(...CT.ink); rect(CV_W / 2 - w / 2, cy - 20 + 4, w, 40, 20);
+  stroke(...CT.border); strokeWeight(2); fill(...CT.panel);
+  rect(CV_W / 2 - w / 2, cy - 20, w, 40, 20);
+  noStroke(); fill(...CT.title);
   textAlign(CENTER, CENTER);
-  textSize(18);
-  text(i18n.t('PAUSA'), CV_W / 2, CV_H / 2 - SPEC_H / 2);
+  text(lbl, CV_W / 2, cy - 1);
+  textStyle(NORMAL);
 }
 
 // ─── MODO FOTONES ────────────────────────────────────────────────
@@ -771,43 +1045,39 @@ function drawPhotonMode(animate) {
 
   for (let ph of inPhotons)  ph.draw();
   for (let ph of outPhotons) ph.draw();
-  drawAtomStateLabel();
 
-  // Etiqueta de la fuente
-  fill(...CT.tubeText, 140);
-  textAlign(CENTER, TOP);
-  textSize(13);
-  noStroke();
-  text(lightType === 'white' ? i18n.t('Luz blanca') : monoWl + ' nm', 65, 20);
+  // Etiqueta de la fuente, debajo de ella
+  etiquetaFuente(lightType === 'white' ? i18n.t('Luz blanca') : monoWl + ' nm');
 
-  if (fotoSingleShot) drawSourceFireHint('para disparar un fotón');
+  if (fotoSingleShot) drawSourceFireHint();
 }
 
 // Banner + resalte de la fuente para el modo "disparo único".
 // La fuente está a la izquierda, centrada en ATOM_CY.
-function drawSourceFireHint(what) {
+// Resalte pulsante de la fuente en el modo «disparo único»; la instrucción
+// («Haz clic en la fuente…») la dice la mascota en el bocadillo.
+function drawSourceFireHint() {
   let sy = ATOM_CY;
-  // Marco/resalte pulsante alrededor de la fuente
-  let pulse = (sin(frameCount * 0.12) + 1) / 2;  // 0..1
+  let pulse = MOV_REDUCIDO ? 0.6 : (sin(frameCount * 0.12) + 1) / 2;  // 0..1
   noFill();
-  stroke(120, 220, 255, 70 + pulse * 150);
-  strokeWeight(2 + pulse * 1.5);
-  rect(10, sy - 56, 60, 112, 12);
-
-  // Banner de texto en 2 líneas, debajo de la fuente
-  let ln1 = i18n.t('⚡ Haz clic en la fuente');
-  let ln2 = i18n.t(what);
-  textSize(11);
-  let pad = 7, lineH = 15;
-  let tw = max(textWidth(ln1), textWidth(ln2)) + pad * 2;
-  let bx = 10, by = sy + 68;
+  stroke(...CT.accent, 90 + pulse * 150);
+  strokeWeight(2.5 + pulse * 1.5);
+  rect(8, sy - 58, 64, 116, 16);
   noStroke();
-  fill(0, 0, 0, 160);
-  rect(bx, by, tw, lineH * 2 + pad * 2, 7);
-  fill(150, 225, 255, 235);
-  textAlign(LEFT, TOP);
-  text(ln1, bx + pad, by + pad);
-  text(ln2, bx + pad, by + pad + lineH);
+}
+
+// Píldora con el nombre de la fuente (luz blanca, 550 nm, 3,0 eV) bajo ella
+function etiquetaFuente(txt) {
+  textSize(15); textStyle(BOLD);
+  let w = textWidth(txt) + 18, cx = 40, y = ATOM_CY + 66;
+  if (cx - w / 2 < 8) cx = 8 + w / 2;
+  fill(...CT.ink); rect(cx - w / 2, y + 3, w, 26, 13);
+  stroke(...CT.border); strokeWeight(2); fill(...CT.panel);
+  rect(cx - w / 2, y, w, 26, 13);
+  noStroke(); fill(...CT.title);
+  textAlign(CENTER, CENTER);
+  text(txt, cx, y + 12);
+  textStyle(NORMAL);
 }
 
 // ¿El ratón está sobre la fuente (zona clicable de disparo)?
@@ -831,9 +1101,24 @@ function mousePressed() {
   }
 }
 
+// Píldora sobre el lienzo para la etiqueta de una flecha (λ): fondo del color
+// de la luz y texto claro u oscuro según lo claro que sea ese color.
+function pildora(txt, x, y, col, tam) {
+  textSize(tam); textStyle(BOLD);
+  let w = textWidth(txt) + 12, h = tam + 8;
+  stroke(...CT.ink); strokeWeight(1.5); fill(...col);
+  rect(x - w / 2, y - h / 2, w, h, h / 2);
+  noStroke();
+  let claro = (col[0] * 0.299 + col[1] * 0.587 + col[2] * 0.114) > 120;
+  fill(...(claro ? [7, 26, 43] : [255, 255, 255]));
+  textAlign(CENTER, CENTER);
+  text(txt, x, y - 1);
+  textStyle(NORMAL);
+}
+
 function updatePhotonMode() {
   electronAngle += 0.018;
-  electronRCurrent += (atomData.radii[electronLevel] - electronRCurrent) * 0.09;
+  electronRCurrent += (R(electronLevel) - electronRCurrent) * 0.09;
   if (stateLblT > 0) stateLblT--;
   if (activeTrT > 0) activeTrT--;
 
@@ -853,7 +1138,7 @@ function updatePhotonMode() {
     ph.update();
     // Colisión con átomo
     let d = dist(ph.x, ph.y, ATOM_CX, ATOM_CY);
-    if (!ph.fading && electronLevel === 0 && atomCascade.length === 0 && d < atomData.radii[0] + 12) {
+    if (!ph.fading && electronLevel === 0 && atomCascade.length === 0 && d < R(0) + 12) {
       tryAbsorbPhoton(ph);
     }
     if (ph.done) inPhotons.splice(i, 1);
@@ -922,6 +1207,8 @@ function tryAbsorbPhoton(ph) {
       stateLblT   = 120;
       activeTr    = tr;
       activeTrT   = 120;
+      contar(i18n.t('Absorbe'), i18n.t('Luz de {wl} nm: el electrón sube de {de} a {a}',
+        { wl: tr.wl, de: atomData.levelLabels[tr.from], a: atomData.levelLabels[tr.to] }), wlToRGB(tr.wl));
       return;
     }
   }
@@ -929,35 +1216,35 @@ function tryAbsorbPhoton(ph) {
 }
 
 function drawLightSource() {
-  // Difusor de luz en la izquierda
-  let sx = 64, sy = ATOM_CY;
+  // Lámpara a la izquierda: carcasa con contorno de tinta y franjas de color
+  let sy = ATOM_CY;
   let colors = lightType === 'white'
-    ? [656, 580, 540, 486, 450, 420, 390]
+    ? [656, 600, 570, 530, 486, 450, 410]
     : [monoWl];
 
-  // Cuerpo de la fuente
+  noStroke(); fill(...CT.ink); rect(16, sy - 50 + 4, 48, 100, 12);
   fill(...CT.srcBody);
-  stroke(...CT.srcStroke);
-  strokeWeight(1.5);
-  rect(18, sy - 50, 42, 100, 8);
+  stroke(...CT.ink);
+  strokeWeight(2.5);
+  rect(16, sy - 50, 48, 100, 12);
 
-  // Líneas de color (patrón espectral)
-  let stripH = 86 / colors.length;
+  let stripH = 84 / colors.length;
   for (let i = 0; i < colors.length; i++) {
     let [r, g, b] = wlToRGB(colors[i]);
     noStroke();
-    fill(r, g, b, 160);
-    let stripY = sy - 43 + i * stripH;
-    rect(22, stripY, 34, stripH - 1, 3);
+    fill(r, g, b, 235);
+    rect(23, sy - 42 + i * stripH, 34, stripH - 2, 4);
   }
+  // Brillo de la lente
+  fill(255, 255, 255, 70); rect(26, sy - 40, 8, 80, 4);
 
   // Flecha →
-  stroke(...CT.srcArrow, 120);
-  strokeWeight(1.5);
-  line(62, sy, 88, sy);
+  stroke(...CT.srcArrow, 200);
+  strokeWeight(2.5);
+  line(66, sy, 86, sy);
   noStroke();
-  fill(...CT.srcArrow, 120);
-  triangle(88, sy - 4, 88, sy + 4, 94, sy);
+  fill(...CT.srcArrow, 200);
+  triangle(86, sy - 6, 86, sy + 6, 95, sy);
 }
 
 // ─── MODO COLISIÓN ───────────────────────────────────────────────
@@ -969,14 +1256,14 @@ function drawCollisionMode(animate) {
 
   for (let ce of collElectrons) ce.draw();
   for (let ph of outPhotons)    ph.draw();
-  drawAtomStateLabel();
 
-  if (collSingleShot) drawSourceFireHint('para disparar un electrón');
+  etiquetaFuente(fmt(electronEnergy, 1) + ' eV');
+  if (collSingleShot) drawSourceFireHint();
 }
 
 function updateCollisionMode() {
   electronAngle += 0.018;
-  electronRCurrent += (atomData.radii[electronLevel] - electronRCurrent) * 0.09;
+  electronRCurrent += (R(electronLevel) - electronRCurrent) * 0.09;
   if (stateLblT > 0) stateLblT--;
   if (activeTrT > 0) activeTrT--;
 
@@ -994,7 +1281,7 @@ function updateCollisionMode() {
     let e = collElectrons[i];
     e.update();
     let d = dist(e.x, e.y, ATOM_CX, ATOM_CY);
-    if (!e.collided && electronLevel === 0 && atomCascade.length === 0 && d < atomData.radii[0] + 10) {
+    if (!e.collided && electronLevel === 0 && atomCascade.length === 0 && d < R(0) + 10) {
       tryCollisionExcite(e);
     }
     if (e.done) collElectrons.splice(i, 1);
@@ -1038,44 +1325,43 @@ function tryCollisionExcite(electron) {
     stateLblT   = 120;
     let tr = findTransition(atomData, prevLevel, bestTarget);
     if (tr) { activeTr = tr; activeTrT = 120; }
+    contar(i18n.t('Choque'), i18n.t('El electrón cede {e} eV y el átomo sube de {de} a {a}',
+      { e: fmt(bestDE, 2), de: atomData.levelLabels[prevLevel], a: atomData.levelLabels[bestTarget] }), [0, 200, 255]);
   } else {
     electron.collided = true;
     stateLbl    = i18n.t('Colisión elástica — energía insuficiente');
     stateLblClr = [150, 150, 150];
     stateLblT   = 90;
+    contar(i18n.t('Rebota'), i18n.t('Al electrón le falta energía para cualquier salto: el átomo no cambia'), CT.nivel, 150);
   }
   electron.done = true;
 }
 
 function drawElectronGun() {
-  let sx = 68, sy = ATOM_CY;
+  let sx = 40, sy = ATOM_CY;
+  noStroke(); fill(...CT.ink); rect(14, sy - 42 + 4, 52, 84, 12);
   fill(...CT.srcBody);
-  stroke(...CT.srcStroke);
-  strokeWeight(1.5);
-  rect(14, sy - 40, 50, 80, 6);
+  stroke(...CT.ink);
+  strokeWeight(2.5);
+  rect(14, sy - 42, 52, 84, 12);
 
   // Intensidad según energía
-  let bright = map(electronEnergy, 0.5, 6.0, 60, 220);
-  fill(0, bright, 255, 180);
+  let bright = map(electronEnergy, 0.5, 6.0, 90, 230);
   noStroke();
-  rect(20, sy - 30, 38, 60, 4);
-  fill(0, 220, 255, 200);
-  circle(sx - 2, sy, 8);
+  fill(0, bright * 0.55, bright, 230);
+  rect(22, sy - 32, 36, 64, 7);
+  fill(255, 255, 255, 60); rect(25, sy - 29, 7, 58, 4);
+  stroke(...CT.ink); strokeWeight(2);
+  fill(0, 220, 255);
+  circle(sx, sy, 12);
 
   // Flecha
-  stroke(0, 180, 255, 130);
-  strokeWeight(1.5);
-  line(65, sy, 88, sy);
+  stroke(...CT.srcArrow, 200);
+  strokeWeight(2.5);
+  line(68, sy, 88, sy);
   noStroke();
-  fill(0, 180, 255, 130);
-  triangle(88, sy - 4, 88, sy + 4, 95, sy);
-
-  // Etiqueta energía
-  fill(...CT.tubeText, 160);
-  textAlign(CENTER, CENTER);
-  textSize(13);
-  noStroke();
-  text(fmt(electronEnergy, 1) + ' eV', sx, sy - 50);
+  fill(...CT.srcArrow, 200);
+  triangle(88, sy - 6, 88, sy + 6, 97, sy);
 }
 
 
@@ -1083,42 +1369,33 @@ function drawElectronGun() {
 function drawGasMode(animate) {
   if (animate) updateGasMode();
 
-  // Tubo
-  noFill();
-  stroke(...CT.tubeBord, 200);
-  strokeWeight(2);
-  rect(TUBE_X, TUBE_Y, TUBE_W, TUBE_H, 8);
-
-  // Fondo tenue del tubo (color del elemento)
+  // Tubo: tarjeta con sombra de tinta y un tinte del color del elemento
   let nc = atomData.nucleusColor;
-  fill(nc[0], nc[1], nc[2], 8);
+  noStroke(); fill(...CT.ink); rect(TUBE_X, TUBE_Y + 4, TUBE_W, TUBE_H, 20);
+  stroke(...CT.tubeBord); strokeWeight(2); fill(...CT.panelBg);
+  rect(TUBE_X, TUBE_Y, TUBE_W, TUBE_H, 20);
   noStroke();
-  rect(TUBE_X + 2, TUBE_Y + 2, TUBE_W - 4, TUBE_H - 4, 7);
+  fill(nc[0], nc[1], nc[2], 14);
+  rect(TUBE_X + 2, TUBE_Y + 2, TUBE_W - 4, TUBE_H - 4, 18);
 
   // Electrodos (altura completa del tubo)
-  fill(...CT.electrode, 200);
+  stroke(...CT.ink); strokeWeight(2);
+  fill(...CT.electrode);
+  rect(TUBE_X + 8, TUBE_Y + 10, 12, TUBE_H - 20, 5);
+  rect(TUBE_X + TUBE_W - 20, TUBE_Y + 10, 12, TUBE_H - 20, 5);
   noStroke();
-  rect(TUBE_X + 3, TUBE_Y + 4, 12, TUBE_H - 8, 2);
-  rect(TUBE_X + TUBE_W - 15, TUBE_Y + 4, 12, TUBE_H - 8, 2);
 
   // Etiquetas cátodo / ánodo (encima del tubo)
-  fill(...CT.tubeText, 200);
-  textAlign(CENTER, BOTTOM);
-  textSize(11);
-  noStroke();
-  text(i18n.t('Cátodo (−)'), TUBE_X + 9, TUBE_Y - 3);
-  text(i18n.t('Ánodo (+)'), TUBE_X + TUBE_W - 9, TUBE_Y - 3);
+  fill(...CT.muted);
+  textSize(13);
+  textAlign(LEFT, BOTTOM);
+  text(i18n.t('Cátodo (−)'), TUBE_X + 6, TUBE_Y - 5);
+  textAlign(RIGHT, BOTTOM);
+  text(i18n.t('Ánodo (+)'), TUBE_X + TUBE_W - 6, TUBE_Y - 5);
 
   for (let ga of gasAtomsList) ga.draw();
   for (let ge of gasElectrons) ge.draw();
   for (let ph of outPhotons)   ph.draw();
-
-  // Etiqueta
-  fill(...CT.tubeText, 160);
-  textAlign(CENTER, TOP);
-  textSize(13);
-  noStroke();
-  text(i18n.t('Lámpara de {nombre}', { nombre: i18n.t(atomData.name) }) + '   —   ' + fmt(gasVoltage, 1) + ' eV', CV_W / 2, TUBE_Y + 5);
 
   drawGasCounters();
 }
@@ -1183,51 +1460,38 @@ function tryGasExcite(electron, atom) {
 function drawAtom(cx, cy) {
   let atom = atomData;
   let nc   = atom.nucleusColor;
-  let maxR = atom.radii[atom.levels - 1];
+  let maxR = R(atom.levels - 1);
 
-  // Fondo tenue del área del átomo
+  // Plato redondo del átomo, con sombra de tinta
   noStroke();
-  fill(nc[0], nc[1], nc[2], 6);
-  circle(cx, cy, maxR * 2 + 60);
+  fill(...CT.ink, CT.fun ? 255 : 0); circle(cx, cy + 4, maxR * 2 + 44);
+  stroke(...CT.border); strokeWeight(2);
+  fill(...CT.panelBg);
+  circle(cx, cy, maxR * 2 + 44);
+  noStroke();
+  fill(nc[0], nc[1], nc[2], 16);
+  circle(cx, cy, maxR * 2 + 40);
 
   // ── Flechas de transición (entre las órbitas, lado derecho) ──
-  drawTransitionArrows(cx, cy);
+  let etiquetas = drawTransitionArrows(cx, cy);
 
   // ── Órbitas ──
   for (let i = 0; i < atom.levels; i++) {
-    let r = atom.radii[i];
-    let alpha = (i === electronLevel) ? 160 : 70;
-    stroke(atom.orbitStroke[0], atom.orbitStroke[1], atom.orbitStroke[2], alpha);
-    strokeWeight(i === electronLevel ? 1.8 : 1.0);
+    let r = R(i);
+    let activo = i === electronLevel;
+    stroke(atom.orbitStroke[0], atom.orbitStroke[1], atom.orbitStroke[2], activo ? 255 : 140);
+    strokeWeight(activo ? 3.5 : 1.8);
     noFill();
     circle(cx, cy, r * 2);
-
-    // Etiqueta del nivel + energía en la parte SUPERIOR de cada órbita, apiladas
-    // verticalmente (las flechas de transición van por la zona inferior). Una
-    // sola línea por nivel: "n=4  2.86 eV".
-    let lx = cx;
-    let ly = cy - r - 4;
-    noStroke();
-    textSize(11);
-    let eStr   = fmt(atom.energies[i], 2) + ' eV';
-    let wLabel = textWidth(atom.levelLabels[i] + '  ');
-    let wEnergy = textWidth(eStr);
-    let xLeft  = lx - (wLabel + wEnergy) / 2;
-    textAlign(LEFT, BOTTOM);
-    fill(...CT.orbitLbl, 160);
-    text(atom.levelLabels[i], xLeft, ly);
-    fill(...CT.txtMid, 120);
-    text(eStr, xLeft + wLabel, ly);
   }
+  noStroke();
 
   // ── Núcleo ──
-  noStroke();
-  fill(nc[0] * 0.3, nc[1] * 0.3, nc[2] * 0.3, 160);
-  circle(cx, cy, 28);
-  fill(nc[0], nc[1], nc[2], 220);
-  circle(cx, cy, 16);
-  fill(255, 255, 255, 160);
-  circle(cx, cy, 7);
+  stroke(...CT.ink); strokeWeight(2.5);
+  fill(nc[0], nc[1], nc[2]);
+  circle(cx, cy, 22);
+  noStroke(); fill(255, 255, 255, 150);
+  ellipse(cx - 3, cy - 4, 7, 5);
 
   // ── Electrón ──
   let eRadius = electronRCurrent;
@@ -1236,29 +1500,55 @@ function drawAtom(cx, cy) {
 
   // Flash de absorción
   if (flashTimer > 0) {
-    let fa = map(flashTimer, 0, 25, 0, 180);
+    let fa = map(flashTimer, 0, 25, 0, 200);
     noStroke();
-    fill(nc[0], nc[1], nc[2], fa);
-    circle(eX, eY, 30);
+    fill(...CT.exciteTxt, fa);
+    circle(eX, eY, 34 + (25 - flashTimer));
+  }
+  noStroke();
+  fill(...CT.electron, 80);
+  circle(eX, eY, 24);
+  stroke(...CT.ink); strokeWeight(2);
+  fill(...CT.electron);
+  circle(eX, eY, 13);
+  noStroke(); fill(255, 255, 255, 150);
+  circle(eX - 2, eY - 2, 4);
+
+  // ── Etiquetas de las flechas (λ), por encima de las órbitas ──
+  for (let e of etiquetas) {
+    if (e.tr.visible) pildora(e.tr.wl + ' nm', e.x, e.y, e.col, e.activa ? 15 : 13);
+    else {
+      fill(e.col[0], e.col[1], e.col[2], e.activa ? 255 : 170);
+      textSize(11); textAlign(CENTER, CENTER);
+      text(e.tr.name, e.x, e.y);
+    }
   }
 
-  // Halo del electrón
-  noStroke();
-  fill(0, 255, 180, 100);
-  circle(eX, eY, 18);
-  fill(0, 255, 180, 220);
-  circle(eX, eY, 9);
-  fill(200, 255, 240, 200);
-  circle(eX, eY, 4);
-
-  // Indicador de excitación
-  if (electronLevel > 0) {
-    let txt = i18n.t('— excitado —');
-    fill(...CT.exciteTxt, 160);
-    textAlign(CENTER, BOTTOM);
-    textSize(12);
+  // ── Etiquetas de nivel, encima de todo (el electrón pasa por debajo) ──
+  // Una por órbita, en su parte superior: «n=4  2,55 eV».
+  for (let i = 0; i < atom.levels; i++) {
+    let r = R(i);
+    let activo = i === electronLevel;
+    let ly = cy - r;
+    textStyle(BOLD); textSize(14);
+    let nom = atom.levelLabels[i];
+    let wN = textWidth(nom);
+    textStyle(NORMAL); textSize(12);
+    let eStr = fmt(atom.energies[i], 2) + ' eV';
+    let wE = textWidth(eStr);
+    let w = wN + wE + 22, h = 20;
+    fill(...(activo ? CT.electron : CT.panel), activo ? 255 : 225);
+    if (activo) { stroke(...CT.ink); strokeWeight(1.5); } else noStroke();
+    rect(cx - w / 2, ly - h / 2, w, h, h / 2);
     noStroke();
-    text(txt, cx, cy - maxR - 12);
+    textAlign(LEFT, CENTER);
+    textStyle(BOLD); textSize(14);
+    let tinta = (CT.electron[1] > 160) ? [7, 26, 43] : [255, 255, 255];
+    fill(...(activo ? tinta : CT.title));
+    text(nom, cx - w / 2 + 8, ly - 1);
+    textStyle(NORMAL); textSize(12);
+    fill(...(activo ? tinta : CT.muted));
+    text(eStr, cx - w / 2 + 14 + wN, ly - 1);
   }
 }
 
@@ -1272,24 +1562,13 @@ function drawTransitionArrows(cx, cy) {
   let n = allTrs.length;
   let angleStep  = n > 1 ? (endAngle - startAngle) / (n - 1) : 0;
 
+  let etiquetas = [];
   for (let i = 0; i < n; i++) {
     let tr  = allTrs[i];
-    let r1  = atom.radii[tr.from];
-    let r2  = atom.radii[tr.to];
+    let r1  = R(tr.from);
+    let r2  = R(tr.to);
 
-    // Color según región espectral
-    let col, baseAlpha, lblAlpha, strokeW;
-    if (tr.visible) {
-      col = wlToRGB(tr.wl);
-      baseAlpha = 190; lblAlpha = 220; strokeW = 1.8;
-    } else if (tr.wl < 380) {
-      col = [170, 80, 230];   // UV: violeta
-      baseAlpha = 110; lblAlpha = 150; strokeW = 1.2;
-    } else {
-      col = [190, 70, 40];    // IR: rojo oscuro
-      baseAlpha = 110; lblAlpha = 150; strokeW = 1.2;
-    }
-
+    let col = tr.visible ? wlToRGB(tr.wl) : (tr.wl < 380 ? [170, 80, 230] : [200, 90, 50]);
     let ang = startAngle + i * angleStep;
     let ix1 = cx + r1 * cos(ang), iy1 = cy + r1 * sin(ang);
     let ix2 = cx + r2 * cos(ang), iy2 = cy + r2 * sin(ang);
@@ -1297,11 +1576,13 @@ function drawTransitionArrows(cx, cy) {
     let isActiveTr = activeTrT > 0 && activeTr &&
       ((tr.from === activeTr.from && tr.to === activeTr.to) ||
        (tr.from === activeTr.to   && tr.to === activeTr.from));
-    let trAlpha = isActiveTr ? min(255, map(activeTrT, 0, 120, 60, 255)) : baseAlpha;
+    let trAlpha = isActiveTr ? 255 : (tr.visible ? 220 : 130);
 
     stroke(col[0], col[1], col[2], trAlpha);
-    strokeWeight(isActiveTr ? 3.2 : strokeW);
+    strokeWeight(isActiveTr ? 4.5 : (tr.visible ? 2.6 : 1.6));
+    if (!tr.visible) drawingContext.setLineDash([4, 4]);
     line(ix1, iy1, ix2, iy2);
+    drawingContext.setLineDash([]);
 
     // Cabeza de flecha — punta exactamente sobre la órbita exterior
     let dx = ix2 - ix1, dy = iy2 - iy1;
@@ -1309,198 +1590,179 @@ function drawTransitionArrows(cx, cy) {
     let ux = dx / len, uy = dy / len;
     let px = -uy, py = ux;
     noStroke();
-    fill(col[0], col[1], col[2], isActiveTr ? 255 : (tr.visible ? 210 : 120));
+    fill(col[0], col[1], col[2], trAlpha);
+    let k = isActiveTr ? 1.4 : 1;
     triangle(
       ix2, iy2,
-      ix2 - ux * 9 + px * 4, iy2 - uy * 9 + py * 4,
-      ix2 - ux * 9 - px * 4, iy2 - uy * 9 - py * 4
+      ix2 - ux * 10 * k + px * 5 * k, iy2 - uy * 10 * k + py * 5 * k,
+      ix2 - ux * 10 * k - px * 5 * k, iy2 - uy * 10 * k - py * 5 * k
     );
+    fill(col[0], col[1], col[2], tr.visible ? 200 : 110);
+    circle(ix1, iy1, 6);
 
-    // Círculo en el nivel inferior
-    fill(col[0], col[1], col[2], tr.visible ? 140 : 80);
-    circle(ix1, iy1, 5);
-
-    // Etiqueta justo más allá de la punta, en dirección radial
-    let lx = ix2 + ux * 16;
-    let ly = iy2 + uy * 16;
-    fill(col[0], col[1], col[2], isActiveTr ? 255 : lblAlpha);
-    noStroke();
-    textAlign(CENTER, CENTER);
-    textSize(tr.visible ? 11 : 10);
-    text(tr.visible ? (tr.wl + ' nm') : tr.name, lx, ly);
+    // Etiqueta más allá de la punta, en dirección radial (se dibujan después,
+    // para que ninguna flecha pase por encima de una etiqueta)
+    let off = tr.visible ? 24 : 14;
+    etiquetas.push({ tr, col, x: ix2 + ux * off, y: iy2 + uy * off, activa: isActiveTr });
   }
+  return etiquetas;
 }
 
 // ─── DIAGRAMA DE NIVELES DE ENERGÍA ─────────────────────────────
+function eToYDiag(e) {
+  let maxE = atomData.energies[atomData.levels - 1];
+  let abajo = DIAG_Y + DIAG_H - (atomData.symbol === 'H' ? 52 : 30);
+  return map(e, 0, maxE, abajo, DIAG_Y + 58);
+}
+
 function drawEnergyDiagram() {
   let atom  = atomData;
   let x0    = DIAG_X;
   let y0    = DIAG_Y;
   let w     = DIAG_W;
   let h     = DIAG_H;
-  let maxE  = atom.energies[atom.levels - 1];
 
-  // Marco del diagrama
-  fill(...CT.panelBg, 210);
-  stroke(...CT.panelBord, 160);
-  strokeWeight(1);
-  rect(x0, y0, w, h, 8);
+  // Tarjeta del diagrama
+  noStroke(); fill(...CT.ink, CT.fun ? 255 : 0); rect(x0, y0 + 4, w, h, 20);
+  stroke(...CT.border); strokeWeight(2); fill(...CT.panelBg);
+  rect(x0, y0, w, h, 20);
+  noStroke();
 
   // Título
-  fill(...CT.txtBright, 180);
-  noStroke();
-  textAlign(CENTER, TOP);
-  textSize(12);
-  text(i18n.t('Diagrama de niveles'), x0 + w / 2, y0 + 6);
-  textSize(11);
-  fill(...CT.txtMid, 130);
-  text('(eV)', x0 + 18, y0 + 18);
+  fill(...CT.title);
+  textAlign(LEFT, TOP);
+  textStyle(BOLD); textSize(16);
+  text(i18n.t('Diagrama de niveles'), x0 + 16, y0 + 12);
+  textStyle(NORMAL);
+  fill(...CT.muted); textSize(13);
+  textAlign(RIGHT, TOP);
+  text(i18n.t('energía (eV)'), x0 + w - 14, y0 + 14);
 
-  // Eje Y
-  stroke(...CT.panelBord, 100);
-  strokeWeight(0.8);
-  line(x0 + 30, y0 + 30, x0 + 30, y0 + h - 20);
+  let axX = x0 + 50;           // eje de energías
+  let finX = x0 + w - 14;      // final de las líneas de nivel
+  stroke(...CT.border); strokeWeight(1.5);
+  line(axX, y0 + 44, axX, y0 + h - 18);
 
-  // Mapear energía a posición Y
-  let eToY = (e) => map(e, -0.1, maxE + 0.3, y0 + h - 22, y0 + 32);
-
-  // Dibujar niveles
+  // Niveles
   for (let i = 0; i < atom.levels; i++) {
     let e = atom.energies[i];
-    let ly = eToY(e);
+    let ly = eToYDiag(e);
     let isActive = (i === electronLevel);
-
-    // Línea del nivel
-    let lColor = isActive ? [0, 255, 180] : [120, 160, 200];
-    let lAlpha = isActive ? 240 : 130;
-    stroke(lColor[0], lColor[1], lColor[2], lAlpha);
-    strokeWeight(isActive ? 2.5 : 1.2);
-    line(x0 + 30, ly, x0 + w - 12, ly);
-
-    // Etiqueta nivel
-    fill(lColor[0], lColor[1], lColor[2], lAlpha);
+    stroke(...(isActive ? CT.electron : CT.nivel), isActive ? 255 : 200);
+    strokeWeight(isActive ? 4 : 2);
+    line(axX, ly, finX, ly);
     noStroke();
-    textAlign(LEFT, CENTER);
-    textSize(11);
-    text(atom.levelLabels[i], x0 + 32, ly - 8);
-    // En el hidrógeno el nivel de abajo es n = 2, no el fundamental (n = 1):
-    // se dice en el propio diagrama para no confundirlos.
-    if (i === 0 && atom.symbol === 'H') {
-      fill(...CT.diagEval, 170);
-      textSize(9.5);
-      textAlign(LEFT, TOP);
-      text(i18n.t('Nivel más bajo de este modelo. El fundamental (n=1) no se muestra.'), x0 + 32, ly + 8, w - 44);
+
+    // Energía a la izquierda del eje y nombre del nivel encima, al final
+    fill(...CT.muted);
+    textAlign(RIGHT, CENTER); textSize(13);
+    text(fmt(e, 2), axX - 6, ly);
+    fill(...(isActive ? CT.electron : CT.title));
+    textAlign(RIGHT, BOTTOM); textStyle(BOLD); textSize(14);
+    text(atom.levelLabels[i], finX, ly - 3);
+    textStyle(NORMAL);
+  }
+  // En el hidrógeno el nivel de abajo es n = 2, no el fundamental (n = 1):
+  // se dice en el propio diagrama para no confundirlos.
+  if (atom.symbol === 'H') {
+    textFont(FUENTE_TEXTO);
+    fill(...CT.muted); textSize(11.5); textLeading(14);
+    textAlign(LEFT, TOP);
+    text(i18n.t('Nivel más bajo de este modelo. El fundamental (n=1) no se muestra.'), axX + 4, eToYDiag(0) + 8, finX - axX - 4);
+    textFont('Fredoka');
+  }
+
+  // Flechas de transición: las visibles, separadas y con la λ en vertical junto
+  // a cada flecha; las infrarrojas, discontinuas y finas a la derecha.
+  let vis = atom.transitions.filter(t => t.visible);
+  let inv = atom.transitions.filter(t => !t.visible);
+  let paso = min(34, (finX - axX - 70) / max(1, vis.length + (inv.length ? 1 : 0)));
+  let xVis = axX + 52;
+  let xInv = xVis + paso * vis.length + 6;
+  let pasoInv = inv.length ? min(9, (finX - 40 - xInv) / max(1, inv.length)) : 0;
+  let todas = vis.map((tr, i) => ({ tr, x: xVis + i * paso }))
+    .concat(inv.map((tr, i) => ({ tr, x: xInv + i * pasoInv })));
+  for (let { tr, x } of todas) {
+    let y1 = eToYDiag(atom.energies[tr.from]);
+    let y2 = eToYDiag(atom.energies[tr.to]);
+    let col = tr.visible ? wlToRGB(tr.wl) : CT.nivel;
+    let activa = activeTrT > 0 && activeTr &&
+      ((tr.from === activeTr.from && tr.to === activeTr.to) ||
+       (tr.from === activeTr.to   && tr.to === activeTr.from));
+    stroke(col[0], col[1], col[2], tr.visible ? 255 : 170);
+    strokeWeight(activa ? 5 : (tr.visible ? 3 : 1.4));
+    if (!tr.visible) drawingContext.setLineDash([3, 4]);
+    line(x, y1, x, y2 + 6);
+    drawingContext.setLineDash([]);
+    if (activa) {
+      noFill(); stroke(...CT.title, 200); strokeWeight(1.5);
+      rect(x - 7, y2 - 4, 14, y1 - y2 + 8, 7);
     }
+    // Punta hacia abajo (emisión)
+    noStroke();
+    fill(col[0], col[1], col[2], tr.visible ? 255 : 170);
+    triangle(x, y1 + 1, x - 5, y1 - 8, x + 5, y1 - 8);
 
-    // Valor de energía
-    fill(...CT.diagEval, 140);
-    textAlign(RIGHT, CENTER);
-    textSize(11);
-    text(fmt(e, 2), x0 + 28, ly);
-
+    if (tr.visible) {
+      // λ en vertical, junto a la flecha
+      push();
+      translate(x + 12, (y1 + y2) / 2);
+      rotate(-HALF_PI);
+      pildoraSinBorde(tr.wl + ' nm', col, activa ? 14 : 12);
+      pop();
+    }
+  }
+  if (inv.length) {
+    fill(...CT.muted); textSize(12); textAlign(CENTER, TOP);
+    text('IR', xInv + pasoInv * (inv.length - 1) / 2, eToYDiag(atom.energies[1]) + 6);
   }
 
   // Electrón animado en el diagrama (posición interpolada)
   let targY   = diagTargetY();
   let distY   = abs(diagElectronRY - targY);
-  let eX      = x0 + 40;   // sobre la línea del nivel, sin tapar la energía del eje
-
+  let eX      = axX + 22;
   noStroke();
   if (distY > 3) {
-    // Ghost en el nivel destino mientras el electrón se mueve
-    fill(0, 255, 180, map(distY, 3, 40, 0, 90));
-    circle(eX, targY, 10);
-    // Línea punteada entre posición actual y destino
-    let steps = floor(distY / 5);
-    for (let s = 0; s <= steps; s++) {
-      if (s % 2 === 0) {
-        let sy = lerp(diagElectronRY, targY, s / steps);
-        fill(0, 255, 180, map(distY, 3, 40, 0, 55));
-        circle(eX, sy, 2.5);
-      }
-    }
+    fill(...CT.electron, map(distY, 3, 40, 0, 110));
+    circle(eX, targY, 12);
   }
-  // Electrón principal
-  fill(0, 255, 180, 220);
-  circle(eX, diagElectronRY, 9);
-  fill(200, 255, 240, 200);
-  circle(eX, diagElectronRY, 4);
-
-  // Dibujar flechas de transición en el diagrama
-  let drawn = new Set();
-  for (let tr of atom.transitions) {
-    let key = tr.from + '-' + tr.to;
-    if (drawn.has(key)) continue;
-    drawn.add(key);
-
-    let y1 = eToY(atom.energies[tr.from]);
-    let y2 = eToY(atom.energies[tr.to]);
-    let col = tr.visible ? wlToRGB(tr.wl) : [70, 70, 70];
-    let alpha = tr.visible ? 180 : 60;
-
-    // Línea de transición (en el centro del diagrama)
-    let tx = min(x0 + w - 28, x0 + w * 0.50 + (tr.from + tr.to) * 4);
-    let isDiagActive = activeTrT > 0 && activeTr &&
-      ((tr.from === activeTr.from && tr.to === activeTr.to) ||
-       (tr.from === activeTr.to   && tr.to === activeTr.from));
-    let diagAlpha = isDiagActive ? min(255, map(activeTrT, 0, 120, 60, 255)) : alpha;
-    let diagCol   = isDiagActive ? [255, 255, 200] : col;
-    stroke(diagCol[0], diagCol[1], diagCol[2], diagAlpha);
-    strokeWeight(isDiagActive ? 3.0 : (tr.visible ? 1.5 : 0.7));
-    if (!tr.visible) drawingContext.setLineDash([3, 4]);
-    line(tx, y1, tx, y2);
-    drawingContext.setLineDash([]);
-
-    // Flecha emisión (hacia abajo)
-    noStroke();
-    fill(col[0], col[1], col[2], alpha);
-    triangle(tx, y1 + 5, tx - 2.5, y1 - 1, tx + 2.5, y1 - 1);
-
-    // Etiqueta λ
-    fill(col[0], col[1], col[2], tr.visible ? 180 : 60);
-    textAlign(LEFT, CENTER);
-    textSize(10);
-    let ly = (y1 + y2) / 2;
-    let lbl = tr.visible ? tr.wl + ' nm' : (tr.wl < 380 ? 'UV' : 'IR');
-    text(lbl, tx + 4, ly);
-  }
-}
-
-// ─── ETIQUETA DE ESTADO (FOTONES / COLISIÓN) ────────────────────
-function drawAtomStateLabel() {
-  if (stateLblT <= 0 || !stateLbl) return;
-  let alpha = stateLblT > 80 ? 220 : map(stateLblT, 0, 80, 0, 220);
-  let [r, g, b] = stateLblClr;
-  let maxR = atomData.radii[atomData.levels - 1];
-  let lx = ATOM_CX;
-  let ly = ATOM_CY - maxR - 26;
-
-  push();
-  textSize(14);
-  let tw = textWidth(stateLbl);
+  stroke(...CT.ink); strokeWeight(2);
+  fill(...CT.electron);
+  circle(eX, diagElectronRY, 13);
   noStroke();
-  fill(...CT.sttBoxBg, alpha * 0.85);
-  rect(lx - tw / 2 - 10, ly - 15, tw + 20, 22, 5);
-  fill(r, g, b, alpha);
-  textAlign(CENTER, CENTER);
-  text(stateLbl, lx, ly - 4);
-  pop();
 }
+
+// Etiqueta en píldora sin borde, centrada en el origen (para textos girados)
+function pildoraSinBorde(txt, col, tam) {
+  textSize(tam); textStyle(BOLD);
+  let w = textWidth(txt) + 10, h = tam + 6;
+  fill(...col); noStroke();
+  rect(-w / 2, -h / 2, w, h, h / 2);
+  let claro = (col[0] * 0.299 + col[1] * 0.587 + col[2] * 0.114) > 120;
+  fill(...(claro ? [7, 26, 43] : [255, 255, 255]));
+  textAlign(CENTER, CENTER);
+  text(txt, 0, -1);
+  textStyle(NORMAL);
+}
+
 
 // ─── CONTADORES MODO GAS ─────────────────────────────────────────
 function drawGasCounters() {
   let freeE    = gasElectrons.length;
   let excitedN = gasAtomsList.filter(a => a.level > 0).length;
 
-  fill(...CT.gasCnt, 160);
-  noStroke();
-  textAlign(LEFT, BOTTOM);
-  textSize(12);
-  text(
-    i18n.t('e⁻ libres: {e}   ·   átomos excitados: {x} / {n}   ·   fotones emitidos: {f}',
-      { e: freeE, x: excitedN, n: gasAtomsList.length, f: gasPhotonTotal }),
-    TUBE_X + 12, TUBE_Y + TUBE_H - 7
-  );
+  // Contadores en una píldora al pie del tubo
+  let txt = i18n.t('e⁻ libres: {e}   ·   átomos excitados: {x} / {n}   ·   fotones emitidos: {f}',
+      { e: freeE, x: excitedN, n: gasAtomsList.length, f: gasPhotonTotal });
+  if (VERTICAL) txt = txt.replace(/\s+·\s+/g, ' · ');
+  textSize(VERTICAL ? 13 : 15);
+  let w = min(textWidth(txt) + 24, TUBE_W - 50);
+  let y = TUBE_Y + TUBE_H - 36;
+  fill(...CT.panel); stroke(...CT.border); strokeWeight(1.5);
+  rect(TUBE_X + 28, y, w, 26, 13);
+  noStroke(); fill(...CT.text);
+  textAlign(LEFT, CENTER);
+  text(txt, TUBE_X + 40, y + 12);
 
   if (gasPhotonTotal === 0) return;
   let visTrs = atomData.transitions.filter(t => t.visible);
@@ -1509,12 +1771,7 @@ function drawGasCounters() {
     let cnt = gasPhotonCounts[k] || 0;
     if (cnt === 0) continue;
     let px = map(tr.wl - 380, 0, 400, SPEC_X1 + 2, SPEC_X2 - 2);
-    let [r, g, b] = wlToRGB(tr.wl);
-    fill(r, g, b, 200);
-    noStroke();
-    textAlign(CENTER, BOTTOM);
-    textSize(11);
-    text(cnt, px, SPEC_Y - 4);
+    pildora(String(cnt), px, SPEC_Y - 12, wlToRGB(tr.wl), 12);
   }
 }
 
@@ -1523,11 +1780,13 @@ function drawSpectrum() {
   let x1 = SPEC_X1, x2 = SPEC_X2, y = SPEC_Y, h = SPEC_H;
   let w = x2 - x1;
 
-  // Marco
+  // Marco: tarjeta oscura (las rayas de emisión se ven sobre negro, como en el
+  // laboratorio) con sombra de tinta
+  noStroke(); fill(...CT.ink, CT.fun ? 255 : 0); rect(x1, y + 4, w, h, 12);
   fill(...CT.specBg);
-  stroke(...CT.specBord, 160);
-  strokeWeight(1);
-  rect(x1, y, w, h, 6);
+  stroke(...CT.specBord);
+  strokeWeight(2);
+  rect(x1, y, w, h, 12);
 
   // Gradiente de fondo pre-renderizado (arcoíris tenue)
   if (spectrumBgGfx) image(spectrumBgGfx, x1, y);
@@ -1548,7 +1807,7 @@ function drawSpectrum() {
       if (intensity < 0.01) continue;
       let px = map(i, 0, 400, x1 + 2, x2 - 2);
       fill(8, 10, 14, intensity * 255);   // negro también con el tema claro
-      rect(px - 1.2, y + 2, 2.4, hAb);
+      rect(px - 1.6, y + 2, 3.2, hAb);
     }
     stroke(...CT.specBord, 160);
     strokeWeight(1);
@@ -1564,44 +1823,47 @@ function drawSpectrum() {
     let [r, g, b] = wlToRGB(wl);
     let px = map(i, 0, 400, x1 + 2, x2 - 2);
     // Halo
-    fill(r, g, b, intensity * 60);
-    rect(px - 1.5, yEm, 3, hEm);
+    fill(r, g, b, intensity * 70);
+    rect(px - 2.5, yEm, 5, hEm);
     // Línea central
-    fill(r, g, b, intensity * 240);
-    rect(px - 0.7, yEm, 1.4, hEm);
+    fill(r, g, b, intensity * 250);
+    rect(px - 1.2, yEm, 2.4, hEm);
   }
 
   // Marcadores de longitud de onda
   let markers = [400, 450, 500, 550, 600, 650, 700, 750];
   for (let wlM of markers) {
     let px = map(wlM - 380, 0, 400, x1 + 2, x2 - 2);
-    stroke(...CT.specTick, 80);
-    strokeWeight(0.6);
-    line(px, y + h - 12, px, y + h - 2);
+    stroke(...CT.specTick, 110);
+    strokeWeight(1);
+    line(px, y + h - 6, px, y + h - 2);
     noStroke();
-    fill(...CT.specTick, 120);
+    fill(...CT.specTick, 220);
     textAlign(CENTER, BOTTOM);
-    textSize(11);
-    text(wlM, px, y + h - 1);
+    textSize(12);
+    if (!VERTICAL || wlM % 100 === 0) text(wlM, px, y + h - 5);
   }
 
-  // Título
+  // Títulos: píldoras oscuras para que se lean sobre el arcoíris
   noStroke();
-  textAlign(LEFT, TOP);
-  textSize(12);
+  textAlign(LEFT, CENTER);
+  textStyle(BOLD); textSize(14);
+  let rotulo = (lbl, ty) => {
+    let tw = textWidth(lbl);
+    fill(...CT.specBg, 225);
+    rect(x1 + 6, ty - 10, tw + 14, 20, 10);
+    fill(...CT.specTitle);
+    text(lbl, x1 + 13, ty - 1);
+  };
   if (split) {
-    // Rótulo de absorción sobre un fondo oscuro para que se lea sobre el arcoíris
-    let lbl = i18n.t('Espectro de absorción');
-    fill(...CT.specBg, 200);
-    rect(x1 + 3, y + 3, textWidth(lbl) + 8, 16, 3);
-    fill(...CT.specTitle, 220);
-    text(lbl, x1 + 7, y + 5);
-    fill(...CT.specTitle, 160);
-    text(i18n.t('Espectro de emisión   (nm)'), x1 + 6, y + h / 2 + 3);
+    rotulo(i18n.t('Espectro de absorción'), y + 14);
+    rotulo(i18n.t('Espectro de emisión'), y + h / 2 + 13);
   } else {
-    fill(...CT.specTitle, 160);
-    text(i18n.t('Espectro de emisión   (nm)'), x1 + 6, y + 4);
+    rotulo(i18n.t('Espectro de emisión'), y + 14);
   }
+  textStyle(NORMAL);
+  fill(...CT.specTick, 220); textSize(12); textAlign(RIGHT, TOP);
+  text('λ (nm)', x2 - 10, y + 5);
 }
 
 // ─── ESPECTRO EXTENDIDO UV/IR ────────────────────────────────────
@@ -1626,23 +1888,22 @@ function drawExtendedSpectrum() {
 
   // Fondos de sección
   fill(...CT.specBg);
-  stroke(55, 35, 80, 120);
-  strokeWeight(1);
-  rect(uvX1, y, uvW, h, 4, 0, 0, 4);
-  stroke(70, 38, 22, 120);
-  rect(irX1, y, irW, h, 0, 4, 4, 0);
+  stroke(...CT.specBord);
+  strokeWeight(2);
+  rect(uvX1, y, uvW, h, 10, 0, 0, 10);
+  rect(irX1, y, irW, h, 0, 10, 10, 0);
 
   // Degradados pre-renderizados UV/IR
   if (extSpecBgGfx) image(extSpecBgGfx, x1, y);
 
   // Etiquetas de sección
   noStroke();
-  fill(170, 100, 235, 115);
+  fill(205, 160, 255);
   textAlign(CENTER, CENTER);
-  textSize(11);
-  text('UV  (200–380 nm)', uvX1 + uvW / 2, y + h / 2);
-  fill(215, 105, 55, 115);
-  text('IR  (780–3000 nm)', irX1 + irW / 2, y + h / 2);
+  textSize(13);
+  text(VERTICAL ? 'UV' : 'UV  (200–380 nm)', uvX1 + uvW / 2, y + h / 2);
+  fill(255, 170, 120);
+  text(VERTICAL ? 'IR  (780–3000 nm)' : 'IR  (780–3000 nm) · ' + i18n.t('no se ve'), irX1 + irW / 2, y + h / 2);
 
   // Marcadores estáticos de transiciones del átomo actual (siempre visibles)
   for (let tr of atomData.transitions) {
@@ -1684,8 +1945,8 @@ function drawExtendedSpectrum() {
     rect(px - 0.7, y + 2, 1.4, h - 4);
     // Etiqueta debajo de la barra si la emisión es fuerte
     if (intensity > 0.28) {
-      fill(col[0], col[1], col[2], intensity * 195);
-      textSize(10);
+      fill(col[0] + 20, col[1] + 60, col[2] + 40, intensity * 255);
+      textSize(11);
       textAlign(CENTER, TOP);
       noStroke();
       text(wl + ' nm', px, y + h + 2);
