@@ -77,12 +77,16 @@
                 Gas ionizado
                 <span class="mode-sub">lámpara de gas</span>
             </button>
+            <button id="mode-reto" type="button" class="mode-btn" role="tab" aria-selected="false">
+                Reto
+                <span class="mode-sub">gas misterioso</span>
+            </button>
         </div>
 
         <hr class="divider">
 
         <!-- SELECTOR DE ÁTOMO -->
-        <section class="control-group">
+        <section id="seccion-atomo" class="control-group">
             <h2>Átomo</h2>
             <div class="input-wrapper" style="flex-direction:row; align-items:center; gap:10px">
                 <label for="atom-select">Elemento</label>
@@ -93,6 +97,7 @@
                     <option value="neon">Neón (Ne) — 5 niveles</option>
                 </select>
             </div>
+            <label class="check-row"><input type="checkbox" id="chk-ir"> Mostrar los saltos infrarrojos en el diagrama</label>
         </section>
 
         <hr class="divider">
@@ -184,6 +189,20 @@
             </div>
 
             <p class="field-hint">El espectro se acumula con el tiempo. Usa el botón Limpiar para reiniciar.</p>
+        </section>
+
+        <!-- CONTROLES DEL RETO -->
+        <section id="controls-reto" class="control-group mode-controls" style="display:none">
+            <h2>¿Qué gas es?</h2>
+            <p class="field-hint">Compara las rayas del tubo con las de cada gas y elige el que coincide.</p>
+            <div class="toggle-group">
+                <button class="toggle-btn" data-gas="hidrogeno">Hidrógeno</button>
+                <button class="toggle-btn" data-gas="helio">Helio</button>
+                <button class="toggle-btn" data-gas="sodio">Sodio</button>
+                <button class="toggle-btn" data-gas="neon">Neón</button>
+            </div>
+            <button id="btn-otro-gas" class="btn-secondary">Otro gas</button>
+            <p id="reto-marcador" class="field-hint" aria-live="polite"></p>
         </section>
 
         <hr class="divider">

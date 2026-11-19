@@ -687,3 +687,9 @@ body.theme-contrast .header-details[open] summary::before { color: #00ffff; }
 @media (max-width: 500px) {
     .metrics-grid { grid-template-columns: repeat(2, 1fr); }
 }
+
+/* Cuatro modos: rejilla de 2 × 2 */
+.mode-switch { grid-template-columns: 1fr 1fr; }
+.check-row { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; cursor: pointer; }
+.toggle-btn.fallo { text-decoration: line-through; opacity: 0.5; }
+.toggle-btn:disabled { cursor: default; }
