@@ -2,8 +2,8 @@
 window.I18N_CA = {
   // Cabecera y descripción
   'Espectros Atómicos — Simulación Interactiva': 'Espectres Atòmics — Simulació Interactiva',
-  'Espectros Atómicos': 'Espectres Atòmics',
-  'Absorción, Emisión y Niveles de Energía': 'Absorció, Emissió i Nivells d\'Energia',
+  'Espectros atómicos': 'Espectres atòmics',
+  'Absorción, emisión y niveles de energía': 'Absorció, emissió i nivells d\'energia',
   'Descripción y conceptos clave': 'Descripció i conceptes clau',
   'desc-intro': 'Els àtoms només poden absorbir o emetre fotons d\'energies molt concretes, que corresponen als salts entre els seus nivells d\'energia. Això origina espectres únics, com una "empremta dactilar" de cada element.',
   'Absorción: fotón in → electrón sube ↑': 'Absorció: fotó in → l\'electró puja ↑',
@@ -15,7 +15,7 @@ window.I18N_CA = {
   'absorción / emisión': 'absorció / emissió',
   'Colisión': 'Col·lisió',
   'bombardeo electrónico': 'bombardeig electrònic',
-  'Gas Ionizado': 'Gas Ionitzat',
+  'Gas ionizado': 'Gas ionitzat',
   'lámpara de gas': 'làmpada de gas',
 
   // Selector de átomo
@@ -31,7 +31,7 @@ window.I18N_CA = {
   'Neón (Ne)': 'Neó (Ne)',
 
   // Modo fotones
-  'Fuente de Luz': 'Font de Llum',
+  'Fuente de luz': 'Font de llum',
   'Luz blanca': 'Llum blanca',
   'Monocromática': 'Monocromàtica',
   'Longitud de onda': 'Longitud d\'ona',
@@ -47,7 +47,7 @@ window.I18N_CA = {
   'Máximo': 'Màxim',
 
   // Modo colisión
-  'Cañón de Electrones': 'Canó d\'Electrons',
+  'Cañón de electrones': 'Canó d\'electrons',
   'Energía del electrón': 'Energia de l\'electró',
   '3,0 eV': '3,0 eV',
   '0,5 eV': '0,5 eV',
@@ -63,7 +63,7 @@ window.I18N_CA = {
   'Con {e} eV puedes alcanzar:': 'Amb {e} eV pots arribar a:',
 
   // Modo gas
-  'Lámpara de Gas': 'Làmpada de Gas',
+  'Lámpara de gas': 'Làmpada de gas',
   'Voltaje del tubo': 'Voltatge del tub',
   '5,0 eV': '5,0 eV',
   'Densidad del gas': 'Densitat del gas',
@@ -122,5 +122,55 @@ window.I18N_CA = {
   '{x} átomos excitados': '{x} àtoms excitats',
   'Todos en reposo': 'Tots en repòs',
   // Sello de la zona de simulación (js/sello.js)
-  'Más simulaciones en simulaciencia.es': 'Més simulacions a simulaciencia.es'
+  'Más simulaciones en simulaciencia.es': 'Més simulacions a simulaciencia.es',
+  // Estilo juego: mascota, bocadillo y rótulos del lienzo
+  'En pausa': 'En pausa',
+  'no se ve': 'no es veu',
+  'Espectro de emisión': 'Espectre d\'emissió',
+  'energía (eV)': 'energia (eV)',
+  'Emite': 'Emet',
+  'Absorbe': 'Absorbeix',
+  'Choque': 'Xoc',
+  'Rebota': 'Rebota',
+  'Excitado': 'Excitat',
+  'Luz de {wl} nm: el electrón baja de {de} a {a}': 'Llum de {wl} nm: l\'electró baixa de {de} a {a}',
+  'Infrarrojo de {wl} nm (no se ve): el electrón baja de {de} a {a}': 'Infraroig de {wl} nm (no es veu): l\'electró baixa de {de} a {a}',
+  'Luz de {wl} nm: el electrón sube de {de} a {a}': 'Llum de {wl} nm: l\'electró puja de {de} a {a}',
+  'El electrón cede {e} eV y el átomo sube de {de} a {a}': 'L\'electró cedeix {e} eV i l\'àtom puja de {de} a {a}',
+  'Al electrón le falta energía para cualquier salto: el átomo no cambia': 'A l\'electró li falta energia per a qualsevol salt: l\'àtom no canvia',
+  'Con {v} eV los electrones no pueden excitar ningún átomo: no hay luz': 'Amb {v} eV els electrons no poden excitar cap àtom: no hi ha llum',
+  'Los electrones chocan con los átomos y los excitan; al bajar de nivel emiten las rayas del espectro': 'Els electrons xoquen amb els àtoms i els exciten; en baixar de nivell emeten les ratlles de l\'espectre',
+  'El electrón está en {nivel} ({e} eV): pronto bajará y emitirá luz': 'L\'electró és a {nivel} ({e} eV): aviat baixarà i emetrà llum',
+  'Haz clic en la fuente para disparar un fotón': 'Fes clic a la font per disparar un fotó',
+  'Llega luz de todos los colores: solo absorbe los fotones con la energía justa para un salto': 'Arriba llum de tots els colors: només absorbeix els fotons amb l\'energia justa per a un salt',
+  'Solo absorbe la luz de {wl} nm si coincide con un salto entre niveles': 'Només absorbeix la llum de {wl} nm si coincideix amb un salt entre nivells',
+  'Haz clic en el cañón para disparar un electrón': 'Fes clic al canó per disparar un electró',
+  'Con {e} eV el electrón no tiene energía para ningún salto': 'Amb {e} eV l\'electró no té energia per a cap salt',
+  'Con {e} eV el electrón puede subir el átomo hasta {nivel}': 'Amb {e} eV l\'electró pot pujar l\'àtom fins a {nivel}',
+  // Escena y reto «gas misterioso»
+  '¡Huella completa!': 'Empremta completa!',
+  'Ya tienes todas las rayas visibles del {elemento}: son su huella dactilar': 'Ja tens totes les ratlles visibles ({elemento}): són la seva empremta dactilar',
+  'Huella del {elemento}: {n} de {t}': 'Empremta ({elemento}): {n} de {t}',
+  'Espectro del gas misterioso': 'Espectre del gas misteriós',
+  'Átomos excitados: {x} de {n}': 'Àtoms excitats: {x} de {n}',
+  'Fotones emitidos: {f}': 'Fotons emesos: {f}',
+  '¡Correcto!': 'Correcte!',
+  'Es {gas}: sus rayas coinciden una a una con las del tubo': 'És {gas}: les seves ratlles coincideixen una a una amb les del tub',
+  'Todavía no': 'Encara no',
+  'El {gas} tiene rayas que no salen en el tubo. Compara otra vez': 'El gas {gas} té ratlles que no surten al tub. Torna a comparar',
+  'Aciertos a la primera: {a} de {r}': 'Encerts a la primera: {a} de {r}',
+  'Gas del tubo': 'Gas del tub',
+  'Otro gas': 'Un altre gas',
+  '¡Resuelto!': 'Resolt!',
+  'Pulsa «Otro gas» para seguir jugando': 'Prem «Un altre gas» per continuar jugant',
+  '¿Qué gas es?': 'Quin gas és?',
+  'Mira las rayas que salen del tubo y elige el gas que tiene las mismas': 'Mira les ratlles que surten del tub i tria el gas que té les mateixes',
+  'Reto': 'Repte',
+  'gas misterioso': 'gas misteriós',
+  'Mostrar los saltos infrarrojos en el diagrama': 'Mostra els salts infrarojos al diagrama',
+  'Compara las rayas del tubo con las de cada gas y elige el que coincide.': 'Compara les ratlles del tub amb les de cada gas i tria la que coincideix.',
+  'Hidrógeno': 'Hidrogen',
+  'Helio': 'Heli',
+  'Sodio': 'Sodi',
+  'Neón': 'Neó',
 };

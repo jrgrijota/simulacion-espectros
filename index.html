@@ -15,9 +15,10 @@
     <script src="js/i18n.js"></script>
     <script src="js/vendor/p5.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/estilo-juego.css">
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
     <script src="js/estadisticas.js" data-sim="sim-espectros"></script>
-    <script src="js/sello.js" data-contenedor="main.simulation-panel" data-esquina="tc"></script>
+    <script src="js/sello.js" data-contenedor="main.simulation-panel" data-esquina="bl"></script>
 </head>
 <body class="theme-dark">
 <div class="app-container">
@@ -40,9 +41,9 @@
                     <line x1="33" y1="21" x2="39" y2="21" stroke="#ff6644" stroke-width="1.5"/>
                     <circle cx="40" cy="21" r="1.5" fill="#ff6644" opacity="0.8"/>
                 </svg>
-                <h1>Espectros Atómicos</h1>
+                <h1>Espectros atómicos</h1>
             </div>
-            <p class="subtitle">Absorción, Emisión y Niveles de Energía</p>
+            <p class="subtitle">Absorción, emisión y niveles de energía</p>
             <details class="header-details">
                 <summary>Descripción y conceptos clave</summary>
                 <div class="header-details-body">
@@ -73,15 +74,19 @@
                 <span class="mode-sub">bombardeo electrónico</span>
             </button>
             <button id="mode-gas" type="button" class="mode-btn" role="tab" aria-selected="false">
-                Gas Ionizado
+                Gas ionizado
                 <span class="mode-sub">lámpara de gas</span>
+            </button>
+            <button id="mode-reto" type="button" class="mode-btn" role="tab" aria-selected="false">
+                Reto
+                <span class="mode-sub">gas misterioso</span>
             </button>
         </div>
 
         <hr class="divider">
 
         <!-- SELECTOR DE ÁTOMO -->
-        <section class="control-group">
+        <section id="seccion-atomo" class="control-group">
             <h2>Átomo</h2>
             <div class="input-wrapper" style="flex-direction:row; align-items:center; gap:10px">
                 <label for="atom-select">Elemento</label>
@@ -92,13 +97,14 @@
                     <option value="neon">Neón (Ne) — 5 niveles</option>
                 </select>
             </div>
+            <label class="check-row"><input type="checkbox" id="chk-ir"> Mostrar los saltos infrarrojos en el diagrama</label>
         </section>
 
         <hr class="divider">
 
         <!-- CONTROLES MODO FOTONES -->
         <section id="controls-fotones" class="control-group mode-controls">
-            <h2>Fuente de Luz</h2>
+            <h2>Fuente de luz</h2>
 
             <div class="toggle-group">
                 <button id="btn-blanca" class="toggle-btn active">Luz blanca</button>
@@ -132,7 +138,7 @@
 
         <!-- CONTROLES MODO COLISIÓN -->
         <section id="controls-colision" class="control-group mode-controls" style="display:none">
-            <h2>Cañón de Electrones</h2>
+            <h2>Cañón de electrones</h2>
 
             <div class="input-wrapper">
                 <div class="label-container">
@@ -162,7 +168,7 @@
 
         <!-- CONTROLES MODO GAS -->
         <section id="controls-gas" class="control-group mode-controls" style="display:none">
-            <h2>Lámpara de Gas</h2>
+            <h2>Lámpara de gas</h2>
 
             <div class="input-wrapper">
                 <div class="label-container">
@@ -183,6 +189,20 @@
             </div>
 
             <p class="field-hint">El espectro se acumula con el tiempo. Usa el botón Limpiar para reiniciar.</p>
+        </section>
+
+        <!-- CONTROLES DEL RETO -->
+        <section id="controls-reto" class="control-group mode-controls" style="display:none">
+            <h2>¿Qué gas es?</h2>
+            <p class="field-hint">Compara las rayas del tubo con las de cada gas y elige el que coincide.</p>
+            <div class="toggle-group">
+                <button class="toggle-btn" data-gas="hidrogeno">Hidrógeno</button>
+                <button class="toggle-btn" data-gas="helio">Helio</button>
+                <button class="toggle-btn" data-gas="sodio">Sodio</button>
+                <button class="toggle-btn" data-gas="neon">Neón</button>
+            </div>
+            <button id="btn-otro-gas" class="btn-secondary">Otro gas</button>
+            <p id="reto-marcador" class="field-hint" aria-live="polite"></p>
         </section>
 
         <hr class="divider">
@@ -267,6 +287,6 @@
 
 </div>
 <script src="js/parametros.js"></script>
-<script src="js/sketch.js?v=20260614m"></script>
+<script src="js/sketch.js?v=20261119"></script>
 </body>
 </html>
