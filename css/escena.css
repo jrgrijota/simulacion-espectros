@@ -132,3 +132,13 @@ body.misterio .modos .carril-btn:not([data-modo="gas"]) { visibility: hidden; }
 /* Luz de un color con emisión continua: cuatro bloques de mandos, más juntos */
 body.modo-fotones.luz-mono.foton-continua .mandos-exp { gap: calc(var(--u) * 6); }
 body.modo-fotones.luz-mono.foton-continua .mandos-exp .bloque-mando input[type="range"] { margin: calc(var(--u) * 4) 0 calc(var(--u) * 1); }
+
+/* Los nombres de los deslizadores crecen y encogen con la escena (--u).
+   La regla general «label» de estilo-juego.css les ponía 0,9rem fijos y, en
+   pantallas estrechas, se partían en dos líneas y se montaban sobre el deslizador. */
+body .escena .mandos-lienzo .fila-slider label {
+    font: 600 calc(var(--u) * 16) var(--font-fun);
+    color: var(--title);
+    white-space: nowrap;
+}
+body .escena .mandos-lienzo .valor-slider { white-space: nowrap; }
