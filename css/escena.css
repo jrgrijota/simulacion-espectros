@@ -1,0 +1,144 @@
+/* ════════════════════════════════════════════════════
+   ESCENA PROPIA DE «ESPECTROS ATÓMICOS»
+   Lo común (cabecera, carril, botones, paneles, retos, mandos sobre el
+   lienzo, móvil) está en css/escena-comun.css, que se carga antes.
+════════════════════════════════════════════════════ */
+
+/* ── Lo que se ve en cada modo y con cada opción ───── */
+body:not(.modo-fotones) .solo-fotones,
+body:not(.modo-colision) .solo-colision,
+body:not(.modo-gas) .solo-gas,
+body:not(.luz-mono) .solo-mono,
+body:not(.foton-continua) .solo-continua,
+body:not(.haz-continuo) .solo-haz,
+body.haz-continuo .solo-un-electron { display: none !important; }
+
+/* Puntos de color de los elementos: el color del tubo encendido */
+.elementos [data-elem="hidrogeno"] .punto { background: #d77bff; }
+.elementos [data-elem="helio"] .punto { background: #ffb9a0; }
+.elementos [data-elem="sodio"] .punto { background: #ffb43c; }
+.elementos [data-elem="neon"] .punto { background: #ff5a36; }
+
+/* ── Mandos del experimento ─────────────────────────── */
+.mandos-exp { gap: calc(var(--u) * 12); }
+.mandos-exp .carril.grande { height: calc(var(--u) * 40); }
+.mandos-exp .bloque-mando { display: flex; flex-direction: column; }
+.mandos-exp .fila-slider { align-items: center; height: calc(var(--u) * 24); }
+.mandos-exp .bloque-mando input[type="range"] { margin: calc(var(--u) * 6) 0 calc(var(--u) * 2); }
+.mandos-exp .slider-bounds { line-height: 1.15; }
+.mandos-exp .nota-mando { margin: 0; }
+
+/* Carril «Un fotón · Continua» con el botón de disparar al lado */
+.fila-disparo { display: flex; gap: calc(var(--u) * 10); align-items: stretch; }
+.fila-disparo .carril.grande { flex: 1 1 auto; width: auto; min-width: 0; }
+.fila-disparo .carril.grande .carril-btn { padding: 0 calc(var(--u) * 8); min-width: 0; }
+.boton-disparar {
+    height: calc(var(--u) * 40);
+    padding: 0 calc(var(--u) * 14);
+    font-size: calc(var(--u) * 16);
+    border-width: 2.5px;
+    border-color: var(--accent);
+    white-space: nowrap;
+    justify-content: center;
+    flex: 0 0 auto;
+}
+.boton-disparar:disabled { opacity: .4; cursor: default; border-color: var(--line); }
+
+/* Deslizador de la longitud de onda: la pista es el arcoíris */
+input[type="range"].arcoiris {
+    background: linear-gradient(90deg, #8200c8 0%, #3c00ff 10%, #0050ff 20%, #00c8ff 30%, #00e650 42%,
+        #b4ff00 50%, #ffe600 56%, #ff8c00 66%, #ff2800 78%, #b40000 92%, #640000 100%) !important;
+    border-radius: 999px;
+    height: calc(var(--u) * 12);
+    -webkit-appearance: none;
+    appearance: none;
+}
+input[type="range"].arcoiris::-webkit-slider-runnable-track { background: transparent; }
+input[type="range"].arcoiris::-moz-range-track { background: transparent; }
+input[type="range"].arcoiris::-moz-range-progress { background: transparent; }
+
+/* Botón «Ver saltos», en el panel de estado */
+.boton-saltos {
+    position: absolute;
+    height: calc(var(--u) * 30);
+    padding: 0 calc(var(--u) * 10);
+    font-size: calc(var(--u) * 14);
+    justify-content: center;
+    z-index: 3;
+}
+
+/* ── Tabla de saltos ────────────────────────────────── */
+.panel-saltos { width: min(470px, calc(100vw - 24px)); }
+.tabla-saltos { width: 100%; border-collapse: collapse; font-size: .95rem; }
+.tabla-saltos th { font: 600 .92rem var(--font-fun); color: var(--muted); text-align: left; padding: 6px 8px; border-bottom: 1.5px solid var(--line); }
+.tabla-saltos td { padding: 6px 8px; border-bottom: 1px solid var(--line); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tabla-saltos .muestra { display: inline-block; width: 12px; height: 12px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.4); }
+
+/* ── Gas misterioso ─────────────────────────────────── */
+body.misterio .elementos .punto { background: var(--muted) !important; }
+body.misterio .elementos { outline: 2.5px dashed var(--change); outline-offset: 3px; }
+body.misterio #btn-saltos,
+body.misterio .modos .carril-btn:not([data-modo="gas"]) { visibility: hidden; }
+#btn-salir-misterio { border-color: var(--change); color: var(--change); }
+#btn-salir-misterio[hidden] { display: none; }
+.boton-misterio { align-self: flex-start; border-color: var(--accent); }
+
+/* ── Álbum de huellas: una tira de espectro por elemento ── */
+.album-huellas { display: flex; flex-direction: column; gap: 8px; }
+.tira-fila { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 10px; }
+.tira-simbolo { font: 700 1rem var(--font-fun); color: var(--title); }
+.tira {
+    position: relative;
+    height: 22px;
+    border-radius: 5px;
+    background: #05080c;
+    border: 2px solid #071a2b;
+}
+.tira .raya {
+    position: absolute;
+    top: 2px; bottom: 2px;
+    width: 4px;
+    margin-left: -2px;
+    border: 1px dashed var(--muted);
+    opacity: .6;
+}
+.tira .raya.vista { border: 0; opacity: 1; top: 1px; bottom: 1px; box-shadow: 0 0 6px currentColor; }
+.album-huellas.grande { gap: 14px; }
+.album-huellas.grande .tira-fila { grid-template-columns: 110px 1fr 48px; }
+.album-huellas.grande .tira { height: 44px; margin-bottom: 16px; }
+.album-huellas.grande .tira .raya { width: 6px; margin-left: -3px; }
+.album-huellas.grande .tira .raya small {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 3px;
+    font-size: .74rem;
+    color: var(--muted);
+}
+.tira-cuenta { font: 700 1rem var(--font-fun); color: var(--change); text-align: right; }
+
+@media (max-width: 760px) {
+    /* Como en el boceto: elementos a todo el ancho, frase debajo y Pausa · Limpiar en una fila */
+    .barra-sus .elementos { flex: 1 1 100%; }
+    .barra-sus .elementos .carril-btn { flex: 1; justify-content: center; }
+    .elementos .carril .punto, .elementos .punto { display: inline-block; }
+    .barra-sus .sus-info { flex: 1 1 100%; }
+    #btn-pausa, #btn-reset, #btn-salir-misterio { order: 3; flex: 1 1 0; justify-content: center; }
+    .album-huellas.grande .tira-fila { grid-template-columns: 74px 1fr 40px; }
+    .album-huellas.grande .tira-simbolo { font-size: .9rem; }
+}
+
+/* Luz de un color con emisión continua: cuatro bloques de mandos, más juntos */
+body.modo-fotones.luz-mono.foton-continua .mandos-exp { gap: calc(var(--u) * 6); }
+body.modo-fotones.luz-mono.foton-continua .mandos-exp .bloque-mando input[type="range"] { margin: calc(var(--u) * 4) 0 calc(var(--u) * 1); }
+
+/* Los nombres de los deslizadores crecen y encogen con la escena (--u).
+   La regla general «label» de estilo-juego.css les ponía 0,9rem fijos y, en
+   pantallas estrechas, se partían en dos líneas y se montaban sobre el deslizador. */
+body .escena .mandos-lienzo .fila-slider label {
+    font: 600 calc(var(--u) * 16) var(--font-fun);
+    color: var(--title);
+    white-space: nowrap;
+}
+body .escena .mandos-lienzo .valor-slider { white-space: nowrap; }
